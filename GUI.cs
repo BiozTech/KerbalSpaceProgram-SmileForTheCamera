@@ -12,7 +12,7 @@ namespace SmileForTheCamera
 
 		static List<AnimatedKerbal> kerbals = Core.AnimatedKerbals;
 		static string[] kerbalParts = { " Head", "EyeL", "EyeR" };
-		static string[] rotationParams = { "Min", "Center", "Max" };
+		static string[] rotationParams = { "Min", "Left", "Right", "Max" };
 
 		static bool wasGUIVisible = Core.IsGUIVisible;
 		static Rect windowPosition = new Rect(UnityEngine.Random.Range(0.23f, 0.27f) * Screen.width, UnityEngine.Random.Range(0.13f, 0.17f) * Screen.height, 0, 0);
@@ -81,14 +81,14 @@ namespace SmileForTheCamera
 					GUILayout.BeginHorizontal(); // head eyeL eyeR
 					for (int i = 0; i < 3; i++)
 					{
-						GUILayout.BeginVertical(); // min center max
+						GUILayout.BeginVertical(); // min left right max
 						if (i == 0)
 						{
 							if (kerbals[id].isHeadAnimated != GUILayout.Toggle(kerbals[id].isHeadAnimated, kerbalParts[i])) { kerbals[id].isHeadAnimated = !kerbals[id].isHeadAnimated; }
 						} else {
 							GUILayout.Label(kerbalParts[i], textFieldHeadLayoutOptions);
 						}
-						for (int j = 0; j < 3; j++)
+						for (int j = 0; j < 4; j++)
 						{
 							GUILayout.BeginHorizontal(); // x y z
 							GUILayout.Label(rotationParams[j], textFieldHeadLayoutOptions);
@@ -102,7 +102,7 @@ namespace SmileForTheCamera
 								Vector3 localEulerAngles = (i == 0) ? kerbals[id].neck.localEulerAngles : ( (i == 1) ? kerbals[id].eyeL.localEulerAngles : kerbals[id].eyeR.localEulerAngles );
 								for (int k = 0; k < 3; k++)
 								{
-									GUILayout.Box((j == 1) ? localEulerAngles[k].ToString("F1") : string.Empty, boxStyle, textFieldHeadLayoutOptions);
+									GUILayout.Box((j == 0) ? localEulerAngles[k].ToString("F1") : string.Empty, boxStyle, textFieldHeadLayoutOptions);
 								}
 							}
 							GUILayout.EndHorizontal();

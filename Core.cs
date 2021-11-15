@@ -31,30 +31,38 @@ namespace SmileForTheCamera
 			Debug.Log("[SmileForTheCamera] " + message);
 		}
 
+		public static Quaternion TurnLeft = Quaternion.Euler(0, -90, 0);
+
 	}
 
 	public static class Settings
 	{
 
+		public static Quaternion HeadOffset = Quaternion.Euler(0, -88, -102);
+		public static Quaternion EyeLOffset = Quaternion.Euler(0, -60, 9);
+		public static Quaternion EyeROffset = Quaternion.Euler(0, -152, -9); // (0, 118, -9) + (0, 90, 0)
 		public static float[][][] DefaultRotationLanded = new float[][][]
 		{
 			// Head
 			new float[][] {
 				new float[] { -15, -10, -12 }, // min
-				new float[] {   0,   0,  -8 }, // center
+				new float[] { -10,  -5,  -8 }, // left
+				new float[] {  10,   5,  -8 }, // right
 				new float[] {  15,  10,   0 }  // max
 			},
 			// EyeL
 			new float[][] {
-				new float[] {0,0,0},
-				new float[] {0,0,0},
-				new float[] {0,0,0}
+				new float[] { -15, -30, -80 },
+				new float[] { -10, -10, -10 },
+				new float[] {  10,  10,  20 },
+				new float[] {  15,  15,  50 }
 			},
 			// EyeR
 			new float[][] {
-				new float[] {0,0,0},
-				new float[] {0,0,0},
-				new float[] {0,0,0}
+				new float[] { -80, -40, -10 },
+				new float[] { -10, -30,  10 },
+				new float[] {  20, -10,  40 },
+				new float[] {  50,   0,  50 }
 			}
 		};
 		public static float[][][] DefaultRotationFlying =
@@ -63,10 +71,12 @@ namespace SmileForTheCamera
 			new float[][] {
 				new float[] { -15, -10, -30 },
 				new float[] {   0,   0, -13 },
+				new float[] {   0,   0, -13 },
 				new float[] {  15,  10,   0 }
 			},
 			// EyeL
 			new float[][] {
+				new float[] {0,0,0},
 				new float[] {0,0,0},
 				new float[] {0,0,0},
 				new float[] {0,0,0}
@@ -75,15 +85,16 @@ namespace SmileForTheCamera
 			new float[][] {
 				new float[] {0,0,0},
 				new float[] {0,0,0},
+				new float[] {0,0,0},
 				new float[] {0,0,0}
 			}
 		};
 
-		static string pluginDataDir = Path.Combine(Path.GetDirectoryName(System.Reflection.Assembly.GetExecutingAssembly().Location), "PluginData");
+		static string pluginDataDir = Path.Combine(KSPUtil.ApplicationRootPath, "GameData/BiozTech/PluginData");
 		static string settingsFileName = Path.Combine(pluginDataDir, "SmileForTheCameraSettings.cfg");
 		static string configTagMain = "SmileForTheCameraSettings";
 		static string[] configTagsPart = { "Head", "EyeL", "EyeR" };
-		static string[] configTagsParam = { "Min", "Cen", "Max" };
+		static string[] configTagsParam = { "Min", "Left", "Right", "Max" };
 
 		public static void Load()
 		{
@@ -108,7 +119,7 @@ namespace SmileForTheCamera
 				bool isOkCurrent;
 
 				string tagCurrent;
-				for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++)
+				for (int i = 0; i < 3; i++) for (int j = 0; j < 4; j++)
 				{
 					tagCurrent = configTagsPart[i] + "RotationLanded" + configTagsParam[j];
 					isOkCurrent = configNode.HasValue(tagCurrent);
@@ -120,7 +131,7 @@ namespace SmileForTheCamera
 					}
 					isOk &= isOkCurrent;
 				}
-				for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++)
+				for (int i = 0; i < 3; i++) for (int j = 0; j < 4; j++)
 				{
 					tagCurrent = configTagsPart[i] + "RotationFlying" + configTagsParam[j];
 					isOkCurrent = configNode.HasValue(tagCurrent);
@@ -152,11 +163,11 @@ namespace SmileForTheCamera
 		public static void Save()
 		{
 			ConfigNode configNode = new ConfigNode(configTagMain);
-			for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++)
+			for (int i = 0; i < 3; i++) for (int j = 0; j < 4; j++)
 			{
 				configNode.AddValue(configTagsPart[i] + "RotationLanded" + configTagsParam[j], Float3ToString(DefaultRotationLanded[i][j]));
 			}
-			for (int i = 0; i < 3; i++) for (int j = 0; j < 3; j++)
+			for (int i = 0; i < 3; i++) for (int j = 0; j < 4; j++)
 			{
 				configNode.AddValue(configTagsPart[i] + "RotationFlying" + configTagsParam[j], Float3ToString(DefaultRotationFlying[i][j]));
 			}
