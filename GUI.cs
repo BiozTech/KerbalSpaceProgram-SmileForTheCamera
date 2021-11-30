@@ -32,15 +32,14 @@ namespace SmileForTheCamera
 
 			GUILayoutOption[] textFieldHeadLayoutOptions = { GUILayout.Width(40f), GUILayout.Height(20f) };
 			GUILayoutOption[] textFieldBodyPositionLayoutOptions = { GUILayout.Width(181f), GUILayout.Height(20f) };
-			GUILayoutOption[] textFieldBodyRotationLayoutOptions = { GUILayout.Width(63f), GUILayout.Height(20f) };//63
-			GUILayoutOption[] sliderLayoutOptions = { GUILayout.Width(114f), GUILayout.Height(20f) };//114
-			//GUILayoutOption[] labelParamsLayoutOptions = { GUILayout.Width(40f), GUILayout.Height(20f) };
+			GUILayoutOption[] textFieldBodyRotationLayoutOptions = { GUILayout.Width(63f), GUILayout.Height(20f) };
+			GUILayoutOption[] sliderLayoutOptions = { GUILayout.Width(114f), GUILayout.Height(20f) };
+			GUILayoutOption[] buttonResetLayoutOptions = { GUILayout.Width(95f), GUILayout.Height(20f) };
 			GUIStyle textFieldStyle = new GUIStyle(GUI.skin.textField) { padding = new RectOffset(4, 4, 3, 3) };
-			//GUIStyle textFieldBodyPositionStyle = new GUIStyle(GUI.skin.textField) { padding = new RectOffset(4, 4, 3, 3) };
 			GUIStyle boxStyle = new GUIStyle(GUI.skin.box) { padding = new RectOffset(4, 4, 3, 3), alignment = TextAnchor.MiddleLeft };
-			//GUIStyle labelKerbalPartsStyle = new GUIStyle(GUI.skin.label) { padding = new RectOffset(0, 0, 4, 4) };
-			//GUIStyle toggleStyle = new GUIStyle(GUI.skin.toggle) { margin = new RectOffset(4, 4, 5, 5) };
-			GUIStyle buttonStyle = new GUIStyle(GUI.skin.button) { margin = new RectOffset(4, 5, 4, 4) };
+			GUIStyle labelStyle = new GUIStyle(GUI.skin.label) { padding = new RectOffset(4, 4, 3, 0) };
+			GUIStyle toggleStyle = new GUIStyle(GUI.skin.toggle) { margin = new RectOffset(4, 4, 4, 6) };
+			GUIStyle buttonResetStyle = new GUIStyle(GUI.skin.button) { margin = new RectOffset(37, 4, 4, 4), padding = new RectOffset(4, 4, 0, 0) };
 			GUIStyle sliderStyle = new GUIStyle(GUI.skin.horizontalSlider) { margin = new RectOffset(4, 4, 8, 8) };
 			GUIStyle sliderThumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb);
 
@@ -63,8 +62,12 @@ namespace SmileForTheCamera
 			{
 				for (int id = kerbals.Count - 1; id >= 0; id--)
 				{
+
 					// god, please don't let me die
-					if (kerbals[id] == null || kerbals[id].kerbalEVA == null) continue;
+					if (kerbals[id] == null || kerbals[id].kerbalEVA == null)
+					{
+						continue;
+					}
 					GUILayout.BeginHorizontal();
 					//if (kerbals[id].isAnimated != GUILayout.Toggle(kerbals[id].isAnimated, " sdsda", GUILayout.Width(452f)))
 					if (kerbals[id].isAnimated != GUILayout.Toggle(kerbals[id].isAnimated, " " + kerbals[id].kerbalEVA.vessel.vesselName, GUILayout.Width(452f)))
@@ -72,37 +75,43 @@ namespace SmileForTheCamera
 						kerbals[id].isAnimated = !kerbals[id].isAnimated;
 						kerbals[id].ResetBodyTransform();
 					}
-					if (GUILayout.Button("Reset angles", buttonStyle, GUILayout.Width(95f)))
-					{
-						kerbals[id].ResetHeadAngles();
-					}
 					GUILayout.EndHorizontal();
 
-					GUILayout.BeginHorizontal(); // head eyeL eyeR
-					for (int i = 0; i < 3; i++)
+					GUILayout.BeginHorizontal();
+					for (int i = 0; i < 3; i++) // head eyeL eyeR
 					{
-						GUILayout.BeginVertical(); // min left right max
+						GUILayout.BeginVertical();
+						GUILayout.BeginHorizontal();
 						if (i == 0)
 						{
-							if (kerbals[id].isHeadAnimated != GUILayout.Toggle(kerbals[id].isHeadAnimated, kerbalParts[i])) { kerbals[id].isHeadAnimated = !kerbals[id].isHeadAnimated; }
+							if (kerbals[id].isHeadAnimated != GUILayout.Toggle(kerbals[id].isHeadAnimated, kerbalParts[i], toggleStyle)) { kerbals[id].isHeadAnimated = !kerbals[id].isHeadAnimated; }
 						} else {
-							GUILayout.Label(kerbalParts[i], textFieldHeadLayoutOptions);
+							GUILayout.Label(kerbalParts[i], labelStyle, textFieldHeadLayoutOptions);
 						}
-						for (int j = 0; j < 4; j++)
+						if (i == 2)
 						{
-							GUILayout.BeginHorizontal(); // x y z
-							GUILayout.Label(rotationParams[j], textFieldHeadLayoutOptions);
+							if (GUILayout.Button("Reset angles", buttonResetStyle, buttonResetLayoutOptions)) { kerbals[id].ResetHeadAngles(); }
+						}
+						GUILayout.EndHorizontal();
+
+						GUILayout.BeginHorizontal();
+						for (int k = 0; k < 4; k++) GUILayout.Label(rotationParams[k], labelStyle, textFieldHeadLayoutOptions);
+						GUILayout.EndHorizontal();
+
+						for (int j = 0; j < 3; j++) // x y z
+						{
+							GUILayout.BeginHorizontal();
 							if (Core.IsEnabled && kerbals[id].isAnimated && kerbals[id].isHeadAnimated)
 							{
-								for (int k = 0; k < 3; k++)
+								for (int k = 0; k < 4; k++) // min left right max
 								{
-									FloatToTextField(ref kerbals[id].rotation[i][j][k], ref kerbals[id].strRotation[i][j][k], textFieldStyle, textFieldHeadLayoutOptions);
+									FloatToTextField(ref kerbals[id].headRotation[i][j][k], ref kerbals[id].strHeadRotation[i][j][k], textFieldStyle, textFieldHeadLayoutOptions);
 								}
 							} else {
 								Vector3 localEulerAngles = (i == 0) ? kerbals[id].neck.localEulerAngles : ( (i == 1) ? kerbals[id].eyeL.localEulerAngles : kerbals[id].eyeR.localEulerAngles );
-								for (int k = 0; k < 3; k++)
+								for (int k = 0; k < 4; k++)
 								{
-									GUILayout.Box((j == 0) ? localEulerAngles[k].ToString("F1") : string.Empty, boxStyle, textFieldHeadLayoutOptions);
+									GUILayout.Box((k == 0) ? localEulerAngles[j].ToString("F1") : string.Empty, boxStyle, textFieldHeadLayoutOptions);
 								}
 							}
 							GUILayout.EndHorizontal();
@@ -111,6 +120,7 @@ namespace SmileForTheCamera
 						GUILayout.Space((i != 2) ? 13f : 1f);
 					}
 					GUILayout.EndHorizontal();
+					GUILayout.Space(4f);
 
 					if (kerbals[id].isBodyAnimated != GUILayout.Toggle(kerbals[id].isBodyAnimated, " Body"))
 					{
@@ -125,29 +135,30 @@ namespace SmileForTheCamera
 						FloatToTextField(ref kerbals[id].bodyPosition.z, ref kerbals[id].strBodyPosition[2], textFieldStyle, textFieldBodyPositionLayoutOptions);
 						GUILayout.EndHorizontal();
 						GUILayout.BeginHorizontal();
-						for (int k = 0; k < 3; k++)
+						for (int j = 0; j < 3; j++)
 						{
-							float value = kerbals[id].bodyRotation[k];
-							FloatToTextField(ref value, ref kerbals[id].strBodyRotation[k], textFieldStyle, textFieldBodyRotationLayoutOptions);
-							kerbals[id].bodyRotation[k] = value;
-							kerbals[id].bodyRotation[k] = GUILayout.HorizontalSlider(kerbals[id].bodyRotation[k], 0f, 360f, sliderStyle, sliderThumbStyle, sliderLayoutOptions);
-							if (kerbals[id].bodyRotation[k] != value) kerbals[id].strBodyRotation[k] = kerbals[id].bodyRotation[k].ToString(); // the one who's in the way, he will help us
+							float value = kerbals[id].bodyRotation[j];
+							FloatToTextField(ref value, ref kerbals[id].strBodyRotation[j], textFieldStyle, textFieldBodyRotationLayoutOptions);
+							kerbals[id].bodyRotation[j] = value;
+							kerbals[id].bodyRotation[j] = GUILayout.HorizontalSlider(kerbals[id].bodyRotation[j], 0f, 360f, sliderStyle, sliderThumbStyle, sliderLayoutOptions);
+							if (kerbals[id].bodyRotation[j] != value) kerbals[id].strBodyRotation[j] = kerbals[id].bodyRotation[j].ToString(); // the one who's in the way, he will help us
 						}
 						GUILayout.EndHorizontal();
 					} else {
 						GUILayout.BeginHorizontal();
-						for (int k = 0; k < 3; k++)
-							GUILayout.Box(kerbals[id].body.localPosition[k].ToString(), boxStyle, textFieldBodyPositionLayoutOptions);
+						for (int j = 0; j < 3; j++)
+							GUILayout.Box(kerbals[id].body.localPosition[j].ToString(), boxStyle, textFieldBodyPositionLayoutOptions);
 						GUILayout.EndHorizontal();
 						GUILayout.BeginHorizontal();
-						for (int k = 0; k < 3; k++)
+						for (int j = 0; j < 3; j++)
 						{
-							GUILayout.Box(kerbals[id].body.localEulerAngles[k].ToString("F1"), boxStyle, textFieldBodyRotationLayoutOptions);
-							GUILayout.HorizontalSlider(kerbals[id].body.localEulerAngles[k], 0f, 360f, sliderStyle, sliderThumbStyle, sliderLayoutOptions);
+							GUILayout.Box(kerbals[id].body.localEulerAngles[j].ToString("F1"), boxStyle, textFieldBodyRotationLayoutOptions);
+							GUILayout.HorizontalSlider(kerbals[id].body.localEulerAngles[j], 0f, 360f, sliderStyle, sliderThumbStyle, sliderLayoutOptions);
 						}
 						GUILayout.EndHorizontal();
 					}
-					GUILayout.Space((id != 0) ? 15f : 4f);
+					GUILayout.Space((id != 0) ? 19f : 4f);
+
 				}
 			} else {
 				if (Core.WereNoKerbalsFound)
@@ -206,8 +217,8 @@ namespace SmileForTheCamera
 			GameEvents.onShowUI.Add(OnShowUI);
 			GameEvents.onHideUI.Add(OnHideUI);
 			//Initialize();
-			//Core.AnimatedKerbals.Add(new AnimatedKerbal());
-			//Core.AnimatedKerbals.Add(new AnimatedKerbal());
+		//	Core.AnimatedKerbals.Add(new AnimatedKerbal());
+		//	Core.AnimatedKerbals.Add(new AnimatedKerbal());
 		}
 
 	}

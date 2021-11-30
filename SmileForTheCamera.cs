@@ -39,26 +39,37 @@ namespace SmileForTheCamera
 		public Transform body, neck, head, eyeL, eyeR;
 		public Vector3 bodyPosition, bodyRotation; // in ResetBodyTransform()
 		public string[] strBodyPosition = new string[3], strBodyRotation = new string[3];
-		public float[][][] rotation; // in ResetHeadAngles()
-		public string[][][] strRotation = new string[3][][].Select(o => new string[4][].Select(oo => new string[3]).ToArray()).ToArray();
-		public bool isAnimated = true, isBodyAnimated = true, isHeadAnimated = true;
+		public float[][][] headRotation; // in ResetHeadAngles()
+		public string[][][] strHeadRotation; // in ResetHeadAngles()
+		public bool isAnimated = true, isBodyAnimated = false, isHeadAnimated = true;
+
+		Quaternion headOffset, eyeLOffset, eyeROffset;
 
 		public AnimatedKerbal(KerbalEVA kerbalEVA)
 		{
 			this.kerbalEVA = kerbalEVA;
 			this.body = this.kerbalEVA.gameObject.transform;
-			this.neck = this.kerbalEVA.transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01");
-			this.head = this.kerbalEVA.transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01");
-			this.eyeL = this.kerbalEVA.transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_upperJaw01/jntDrv_l_eye01");
-			this.eyeR = this.kerbalEVA.transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_upperJaw01/jntDrv_r_eye01");
+			this.neck = this.body.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01");
+			this.head = this.body.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01");
+			this.eyeL = this.body.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_upperJaw01/jntDrv_l_eye01");
+			this.eyeR = this.body.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_upperJaw01/jntDrv_r_eye01");
+			if (this.kerbalEVA.part.protoModuleCrew[0].gender == ProtoCrewMember.Gender.Male)
+			{
+				headOffset = Settings.MaleHeadOffset;
+				eyeLOffset = Settings.MaleEyeLOffset;
+				eyeROffset = Settings.MaleEyeROffset;
+			} else {
+				headOffset = Settings.FemaleHeadOffset;
+				eyeLOffset = Settings.FemaleEyeLOffset;
+				eyeROffset = Settings.FemaleEyeROffset;
+			}
 			ResetBodyTransform();
 			ResetHeadAngles();
 		}
 		public AnimatedKerbal()//ASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJAS
 		{
-			rotation = Settings.DefaultRotationLanded;
-			for (int i = 0; i < 3; i++) for (int j = 0; j < 4; j++) for (int k = 0; k < 3; k++) // bruh
-				strRotation[i][j][k] = rotation[i][j][k].ToString();
+			headRotation = Settings.DefaultRotationMale;
+			strHeadRotation = headRotation.Select(o => o.Select(oo => oo.Select(r => r.ToString()).ToArray()).ToArray()).ToArray();
 			bodyPosition = bodyRotation = new Vector3();
 			for (int i = 0; i < 3; i++)
 			{
@@ -71,23 +82,24 @@ namespace SmileForTheCamera
 		{
 			if (isAnimated)
 			{
-				if (isBodyAnimated)//false deafult?
+				if (isBodyAnimated)
 				{
-				//	body.localPosition = bodyPosition;
-				//	body.localEulerAngles = bodyRotation;
+					body.localPosition = bodyPosition;
+					body.localEulerAngles = bodyRotation;
 				}
 				if (isHeadAnimated)
 				{
-					Quaternion direction = Quaternion.LookRotation(head.position - target.position, body.up);
-					/*neck.rotation = direction * Quaternion.Euler(rotation[0][0][0], rotation[0][0][1], rotation[0][0][2]);
-					eyeL.rotation = direction * Quaternion.Euler(rotation[0][1][0], rotation[0][1][1], rotation[0][1][2]);
-					eyeR.rotation = direction * Quaternion.Euler(rotation[0][2][0], rotation[0][2][1], rotation[0][2][2]);*/
-					neck.rotation = direction * Settings.HeadOffset;
-					neck.localRotation = EstimateRotation(neck.localRotation, rotation[0][0], rotation[0][1], rotation[0][2], rotation[0][3]);
-					eyeL.rotation = direction * Settings.EyeLOffset;
-					eyeL.localRotation = EstimateRotation(eyeL.localRotation, rotation[1][0], rotation[1][1], rotation[1][2], rotation[1][3]);
-					eyeR.rotation = direction * Settings.EyeROffset;
-					eyeR.localRotation = EstimateRotation(eyeR.localRotation, rotation[2][0], rotation[2][1], rotation[2][2], rotation[2][3]) * Core.TurnLeft;
+					Quaternion direction = Quaternion.LookRotation(Vector3.Lerp(eyeL.position, eyeR.position, 0.5f) - target.position, body.up);
+					neck.rotation = direction * headOffset;
+					neck.localRotation = EstimateRotation(neck.localRotation, headRotation[0]);
+					eyeL.rotation = direction * eyeLOffset;
+					eyeL.localRotation = EstimateRotation(eyeL.localRotation, headRotation[1]);
+					eyeR.rotation = direction * eyeROffset;
+					eyeR.localRotation = EstimateRotation(eyeR.localRotation, headRotation[2]) * Core.TurnLeft;
+
+					/*neck.rotation = direction * Quaternion.Euler(headRotation[0][0][0], headRotation[0][0][1], headRotation[0][0][2]);
+					eyeL.rotation = direction * Quaternion.Euler(headRotation[0][1][0], headRotation[0][1][1], headRotation[0][1][2]);
+					eyeR.rotation = direction * Quaternion.Euler(headRotation[0][2][0], headRotation[0][2][1], headRotation[0][2][2]);*/
 					/*Debug.Log("neck "+neck.localRotation.eulerAngles);
 					Debug.Log("eyeL "+eyeL.localRotation.eulerAngles);
 					Debug.Log("eyeR "+eyeR.localRotation.eulerAngles);*/
@@ -95,42 +107,40 @@ namespace SmileForTheCamera
 			}
 		}
 
-		static Quaternion EstimateRotation(Quaternion value, float[] min, float[] left, float[] right, float[] max)
+		static Quaternion EstimateRotation(Quaternion value, float[][] rotation)
 		{
-			float x = EstimateNearCenter(value.x/value.w, min[0], left[0], right[0], max[0]);
-			float y = EstimateNearCenter(value.y/value.w, min[1], left[1], right[1], max[1]);
-			float z = EstimateNearCenter(value.z/value.w, min[2], left[2], right[2], max[2]);
+			float x = EstimateNearCenter(value.x/value.w, rotation[0]);
+			float y = EstimateNearCenter(value.y/value.w, rotation[1]);
+			float z = EstimateNearCenter(value.z/value.w, rotation[2]);
 			return new Quaternion(x, y, z, 1.0f);
 		}
-		static float EstimateNearCenter(float value, float min, float left, float right, float max)
+		static float EstimateNearCenter(float value, float[] rotation)
 		{
-			min = Mathf.Tan(min * Mathf.Deg2Rad);
-			left = Mathf.Tan(left * Mathf.Deg2Rad);
-			right = Mathf.Tan(right * Mathf.Deg2Rad);
-			max = Mathf.Tan(max * Mathf.Deg2Rad);
-			if (min > left || left > right || right > max)
+			if (rotation[0] > rotation[1] || rotation[1] > rotation[2] || rotation[2] > rotation[3])
 			{
 				return value;
 			}
-			if (value < left)
+			float angle = Mathf.Atan(value) * Mathf.Rad2Deg;
+			if (angle > 180f) angle -= 360f;
+			if (angle < rotation[1])
 			{
-				float widthLeft = left - min;
-				if (widthLeft == 0)
+				float newAngle = rotation[1];
+				float widthLeft = rotation[1] - rotation[0];
+				if (widthLeft != 0)
 				{
-					return left;
+					newAngle = rotation[1] - widthLeft * (1.0f - Mathf.Exp((angle - rotation[1]) / widthLeft));
 				}
-				float deltaLeft = (value - left) / widthLeft;
-				return left - widthLeft * (1.0f - Mathf.Exp(-deltaLeft * deltaLeft));
+				return Mathf.Tan(newAngle * Mathf.Deg2Rad);
 			}
-			if (right < value)
+			if (rotation[2] < angle)
 			{
-				float widthRight = max - right;
-				if (widthRight == 0)
+				float newAngle = rotation[2];
+				float widthRight = rotation[3] - rotation[2];
+				if (widthRight != 0)
 				{
-					return right;
+					newAngle = rotation[2] + widthRight * (1.0f - Mathf.Exp((rotation[2] - angle) / widthRight));
 				}
-				float deltaRight = (value - right) / widthRight;
-				return right + widthRight * (1.0f - Mathf.Exp(-deltaRight * deltaRight));
+				return Mathf.Tan(newAngle * Mathf.Deg2Rad);
 			}
 			return value;
 		}
@@ -152,9 +162,8 @@ namespace SmileForTheCamera
 		}
 		public void ResetHeadAngles()
 		{
-			rotation = (kerbalEVA.vessel.situation == Vessel.Situations.LANDED) ? Settings.DefaultRotationLanded : Settings.DefaultRotationFlying;
-			for (int i = 0; i < 3; i++) for (int j = 0; j < 4; j++) for (int k = 0; k < 3; k++) // bruh
-				strRotation[i][j][k] = rotation[i][j][k].ToString();
+			headRotation = ((kerbalEVA.part.protoModuleCrew[0].gender == ProtoCrewMember.Gender.Male) ? Settings.DefaultRotationMale : Settings.DefaultRotationFemale).Select(o => o.Select(oo => oo.ToArray()).ToArray()).ToArray();
+			strHeadRotation = headRotation.Select(o => o.Select(oo => oo.Select(rot => rot.ToString()).ToArray()).ToArray()).ToArray();
 		}
 
 	}

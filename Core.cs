@@ -23,6 +23,7 @@ namespace SmileForTheCamera
 				AnimatedKerbal newKerbal = oldKerbals.Find(o => o.kerbalEVA == kerbalEVA) ?? new AnimatedKerbal(kerbalEVA);
 				AnimatedKerbals.Add(newKerbal);
 				newKerbal.ResetBodyTransform();
+				newKerbal.ResetHeadAngles();
 			}
 		}
 
@@ -38,55 +39,53 @@ namespace SmileForTheCamera
 	public static class Settings
 	{
 
-		public static Quaternion HeadOffset = Quaternion.Euler(0, -88, -102);
-		public static Quaternion EyeLOffset = Quaternion.Euler(0, -60, 9);
-		public static Quaternion EyeROffset = Quaternion.Euler(0, -152, -9); // (0, 118, -9) + (0, 90, 0)
-		public static float[][][] DefaultRotationLanded = new float[][][]
+		public static Quaternion MaleHeadOffset = Quaternion.Euler(0,  -88, -108);
+		public static Quaternion MaleEyeLOffset = Quaternion.Euler(0,  -59,    4);
+		public static Quaternion MaleEyeROffset = Quaternion.Euler(0, -152,   -4); // (0, 118, -4) + (0, 90, 0)
+		public static Quaternion FemaleHeadOffset = Quaternion.Euler(0,  -88, -108);
+		public static Quaternion FemaleEyeLOffset = Quaternion.Euler(0,  -66,    0);
+		public static Quaternion FemaleEyeROffset = Quaternion.Euler(0, -156,   -6); // (0, 114, -6) + (0, 90, 0)
+
+		public static float[][][] DefaultRotationMale = new float[][][]
 		{
 			// Head
-			new float[][] {
-				new float[] { -15, -10, -12 }, // min
-				new float[] { -10,  -5,  -8 }, // left
-				new float[] {  10,   5,  -8 }, // right
-				new float[] {  15,  10,   0 }  // max
+			new float[][] { //min left right max
+				new float[] { -15, -10,  10,  15 },
+				new float[] { -10,  -5,   5,  10 },
+				new float[] { -12, -10,  -4,   0 }
 			},
 			// EyeL
 			new float[][] {
-				new float[] { -15, -30, -80 },
-				new float[] { -10, -10, -10 },
-				new float[] {  10,  10,  20 },
-				new float[] {  15,  15,  50 }
+				new float[] { -15, -10,  10,  15 },
+				new float[] {   0,   5,  10,  15 },
+				new float[] { -10,   0,  10,  30 }
 			},
 			// EyeR
 			new float[][] {
-				new float[] { -80, -40, -10 },
-				new float[] { -10, -30,  10 },
-				new float[] {  20, -10,  40 },
-				new float[] {  50,   0,  50 }
+				new float[] { -80, -10,  20,  50 },
+				new float[] { -40, -35, -25, -20 },
+				new float[] { -10,  10,  40,  50 }
 			}
 		};
-		public static float[][][] DefaultRotationFlying =
+		public static float[][][] DefaultRotationFemale =
 		{
 			// Head
 			new float[][] {
-				new float[] { -15, -10, -30 },
-				new float[] {   0,   0, -13 },
-				new float[] {   0,   0, -13 },
-				new float[] {  15,  10,   0 }
+				new float[] { -15, -10,  10,  15 },
+				new float[] { -10,  -5,   5,  10 },
+				new float[] { -12, -10,  -4,   0 }
 			},
 			// EyeL
 			new float[][] {
-				new float[] {0,0,0},
-				new float[] {0,0,0},
-				new float[] {0,0,0},
-				new float[] {0,0,0}
+				new float[] { -15,  -5,  10,  20 },
+				new float[] {   5,  10,  15,  20 },
+				new float[] { -10,   0,  10,  20 }
 			},
 			// EyeR
 			new float[][] {
-				new float[] {0,0,0},
-				new float[] {0,0,0},
-				new float[] {0,0,0},
-				new float[] {0,0,0}
+				new float[] { -20, -10,   0,  10 },
+				new float[] { -45, -35, -30, -20 },
+				new float[] { -10,   0,  20,  30 }
 			}
 		};
 
@@ -94,6 +93,7 @@ namespace SmileForTheCamera
 		static string settingsFileName = Path.Combine(pluginDataDir, "SmileForTheCameraSettings.cfg");
 		static string configTagMain = "SmileForTheCameraSettings";
 		static string[] configTagsPart = { "Head", "EyeL", "EyeR" };
+		static string[] configGenders = { "Male", "Female" };
 		static string[] configTagsParam = { "Min", "Left", "Right", "Max" };
 
 		public static void Load()
@@ -119,27 +119,27 @@ namespace SmileForTheCamera
 				bool isOkCurrent;
 
 				string tagCurrent;
-				for (int i = 0; i < 3; i++) for (int j = 0; j < 4; j++)
+				for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
 				{
-					tagCurrent = configTagsPart[i] + "RotationLanded" + configTagsParam[j];
+					tagCurrent = configTagsPart[i] + configGenders[0] + configTagsParam[j];
 					isOkCurrent = configNode.HasValue(tagCurrent);
 					if (isOkCurrent)
 					{
 						float[] float3;
 						isOkCurrent = TryParseFloat3(configNode.GetValue(tagCurrent), out float3);
-						if (isOkCurrent) DefaultRotationLanded[i][j] = float3;
+						if (isOkCurrent) DefaultRotationMale[i][j] = float3;
 					}
 					isOk &= isOkCurrent;
 				}
-				for (int i = 0; i < 3; i++) for (int j = 0; j < 4; j++)
+				for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
 				{
-					tagCurrent = configTagsPart[i] + "RotationFlying" + configTagsParam[j];
+					tagCurrent = configTagsPart[i] + configGenders[1] + configTagsParam[j];
 					isOkCurrent = configNode.HasValue(tagCurrent);
 					if (isOkCurrent)
 					{
 						float[] float3;
 						isOkCurrent = TryParseFloat3(configNode.GetValue(tagCurrent), out float3);
-						if (isOkCurrent) DefaultRotationFlying[i][j] = float3;
+						if (isOkCurrent) DefaultRotationFemale[i][j] = float3;
 					}
 					isOk &= isOkCurrent;
 				}
@@ -163,13 +163,13 @@ namespace SmileForTheCamera
 		public static void Save()
 		{
 			ConfigNode configNode = new ConfigNode(configTagMain);
-			for (int i = 0; i < 3; i++) for (int j = 0; j < 4; j++)
+			for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
 			{
-				configNode.AddValue(configTagsPart[i] + "RotationLanded" + configTagsParam[j], Float3ToString(DefaultRotationLanded[i][j]));
+				configNode.AddValue(configTagsPart[i] + configGenders[0] + configTagsParam[j], Float3ToString(DefaultRotationMale[i][j]));
 			}
-			for (int i = 0; i < 3; i++) for (int j = 0; j < 4; j++)
+			for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
 			{
-				configNode.AddValue(configTagsPart[i] + "RotationFlying" + configTagsParam[j], Float3ToString(DefaultRotationFlying[i][j]));
+				configNode.AddValue(configTagsPart[i] + configGenders[1] + configTagsParam[j], Float3ToString(DefaultRotationFemale[i][j]));
 			}
 			if (!Directory.Exists(pluginDataDir)) Directory.CreateDirectory(pluginDataDir);
 			File.WriteAllText(settingsFileName, configNode.ToString(), System.Text.Encoding.Unicode);
