@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using UnityEngine;
 
@@ -13,18 +14,38 @@ namespace SmileForTheCamera
 		public static bool IsEnabled = false;
 		public static bool WereNoKerbalsFound = false;
 		public static List<AnimatedKerbal> AnimatedKerbals = new List<AnimatedKerbal>();
+		public static List<AnimatedVessel> AnimatedVessels = new List<AnimatedVessel>();
+		public static Orbit InitialOrbit;
 
 		public static void ResetAnimatedKerbals()
 		{
-			List<AnimatedKerbal> oldKerbals = new List<AnimatedKerbal>(AnimatedKerbals);
-			AnimatedKerbals.Clear();
+			List<AnimatedKerbal> newKerbals = new List<AnimatedKerbal>();
+			List<AnimatedVessel> newVessels = new List<AnimatedVessel>();
 			foreach (KerbalEVA kerbalEVA in UnityEngine.Object.FindObjectsOfType<KerbalEVA>())
 			{
-				AnimatedKerbal newKerbal = oldKerbals.Find(o => o.kerbalEVA == kerbalEVA) ?? new AnimatedKerbal(kerbalEVA);
-				AnimatedKerbals.Add(newKerbal);
-				newKerbal.ResetBodyTransform();
-				newKerbal.ResetHeadAngles();
+				AnimatedKerbal newKerbal = AnimatedKerbals.Find(o => o.kerbalEVA == kerbalEVA);
+				if (newKerbal != null)
+				{
+					newKerbal.ResetBodyTransform();
+					newKerbal.ResetHeadAngles();
+				} else {
+					newKerbal = new AnimatedKerbal(kerbalEVA);
+				}
+				newKerbals.Add(newKerbal);
 			}
+			foreach (Vessel vessel in FlightGlobals.VesselsLoaded.Where(v => !v.isEVA))
+			{
+				AnimatedVessel newVessel = AnimatedVessels.Find(o => o.vessel == vessel);
+				if (newVessel != null)
+				{
+					newVessel.ResetTransform();
+				} else {
+					newVessel = new AnimatedVessel(vessel);
+				}
+				newVessels.Add(newVessel);
+			}
+			AnimatedKerbals = newKerbals;
+			AnimatedVessels = newVessels;
 		}
 
 		public static void Log(object message)
