@@ -13,6 +13,7 @@ namespace SmileForTheCamera
 		{
 			if (Core.IsEnabled)
 			{
+				if (Core.IsEditorOpen) Settings.UpdateOffset();
 				Transform cam = Camera.main.transform;
 				foreach (AnimatedKerbal animatedKerbal in Core.AnimatedKerbals)
 				{
@@ -40,7 +41,7 @@ namespace SmileForTheCamera
 		public Transform neck, head, eyeL, eyeR;
 		public float[][][] headRotation;
 		public string[][][] strHeadRotation;
-		public bool isBodyAnimated = false, isHeadAnimated = true;
+		public bool isBodyAnimated = false, isHeadAnimated = true, isMale = true;
 
 		Quaternion headOffset, eyeLOffset, eyeROffset;
 
@@ -53,31 +54,13 @@ namespace SmileForTheCamera
 			this.head = transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01");
 			this.eyeL = transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_upperJaw01/jntDrv_l_eye01");
 			this.eyeR = transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_upperJaw01/jntDrv_r_eye01");
+			this.isMale = this.kerbalEVA.part.protoModuleCrew[0].gender == ProtoCrewMember.Gender.Male;
+			name = this.kerbalEVA.part.protoModuleCrew[0].name;
 			isAnimated = true;
 			isInitiallyLanded = IsLanded;
-			if (this.kerbalEVA.part.protoModuleCrew[0].gender == ProtoCrewMember.Gender.Male)
-			{
-				headOffset = Settings.MaleHeadOffset;
-				eyeLOffset = Settings.MaleEyeLOffset;
-				eyeROffset = Settings.MaleEyeROffset;
-			} else {
-				headOffset = Settings.FemaleHeadOffset;
-				eyeLOffset = Settings.FemaleEyeLOffset;
-				eyeROffset = Settings.FemaleEyeROffset;
-			}
+			ResetOffset(); // set headOffset, eyeLOffset, eyeROffset
 			ResetBodyTransform(); // set position, rotation, strPosition, strRotation
 			ResetHeadAngles(); // set headRotation, strHeadRotation
-		}
-		public AnimatedKerbal()//ASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJASASKHJAS
-		{
-			headRotation = Settings.DefaultRotationMale;
-			strHeadRotation = headRotation.Select(o => o.Select(oo => oo.Select(r => r.ToString()).ToArray()).ToArray()).ToArray();
-			position = rotation = new Vector3();
-			for (int i = 0; i < 3; i++)
-			{
-				strPosition[i] = position[i].ToString();
-				strRotation[i] = rotation[i].ToString();
-			}
 		}
 
 		public void ForceAnimate(Transform target)
@@ -91,6 +74,7 @@ namespace SmileForTheCamera
 				}
 				if (isHeadAnimated)
 				{
+					if (Core.IsEditorOpen) ResetOffset();
 					Quaternion direction = Quaternion.LookRotation(Vector3.Lerp(eyeL.position, eyeR.position, 0.5f) - target.position, transform.up);
 					neck.rotation = direction * headOffset;
 					neck.localRotation = EstimateRotation(neck.localRotation, headRotation[0]);
@@ -98,9 +82,6 @@ namespace SmileForTheCamera
 					eyeL.localRotation = EstimateRotation(eyeL.localRotation, headRotation[1]);
 					eyeR.rotation = direction * eyeROffset;
 					eyeR.localRotation = EstimateRotation(eyeR.localRotation, headRotation[2]) * Core.TurnLeft;
-					/*neck.rotation = direction * Quaternion.Euler(headRotation[0][0][0], headRotation[0][0][1], headRotation[0][0][2]);
-					eyeL.rotation = direction * Quaternion.Euler(headRotation[0][1][0], headRotation[0][1][1], headRotation[0][1][2]);
-					eyeR.rotation = direction * Quaternion.Euler(headRotation[0][2][0], headRotation[0][2][1], headRotation[0][2][2]);*/
 				}
 			}
 		}
@@ -155,8 +136,21 @@ namespace SmileForTheCamera
 		}
 		public void ResetHeadAngles()
 		{
-			headRotation = ((kerbalEVA.part.protoModuleCrew[0].gender == ProtoCrewMember.Gender.Male) ? Settings.DefaultRotationMale : Settings.DefaultRotationFemale).Select(o => o.Select(oo => oo.ToArray()).ToArray()).ToArray();
+			headRotation = Settings.RotationLimits[isMale ? 0 : 1].Select(o => o.Select(oo => oo.ToArray()).ToArray()).ToArray();
 			strHeadRotation = headRotation.Select(o => o.Select(oo => oo.Select(rot => rot.ToString()).ToArray()).ToArray()).ToArray();
+		}
+		void ResetOffset()
+		{
+			if (isMale)
+			{
+				headOffset = Settings.OffsetQuaternions[0][0];
+				eyeLOffset = Settings.OffsetQuaternions[0][1];
+				eyeROffset = Settings.OffsetQuaternions[0][2];
+			} else {
+				headOffset = Settings.OffsetQuaternions[1][0];
+				eyeLOffset = Settings.OffsetQuaternions[1][1];
+				eyeROffset = Settings.OffsetQuaternions[1][2];
+			}
 		}
 
 	}
@@ -168,6 +162,7 @@ namespace SmileForTheCamera
 		{
 			this.vessel = vessel;
 			transform = this.vessel.vesselTransform;
+			name = this.vessel.vesselName;
 			isAnimated = true;
 			isInitiallyLanded = IsLanded;
 			ResetTransform();
@@ -216,6 +211,7 @@ namespace SmileForTheCamera
 		public Transform transform;
 		public Vector3 position, rotation;
 		public string[] strPosition = new string[3], strRotation = new string[3];
+		public string name;
 		public bool isAnimated, isInitiallyLanded;
 
 		public bool IsLanded

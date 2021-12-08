@@ -9,13 +9,10 @@ namespace SmileForTheCamera
 	public class SmileForTheCameraGUI : MonoBehaviour
 	{
 
-		static string[] kerbalParts = { " Head", "EyeL", "EyeR" };
-		static string[] rotationParams = { "Min", "Left", "Right", "Max" };
-
 		static bool wasGUIVisible = Core.IsGUIVisible;
 		static Rect windowPosition = new Rect(UnityEngine.Random.Range(0.23f, 0.27f) * Screen.width, UnityEngine.Random.Range(0.13f, 0.17f) * Screen.height, 0, 0);
-		static GUILayoutOption[] textFieldHeadLayoutOptions, textFieldBodyPositionLayoutOptions, textFieldBodyRotationLayoutOptions, sliderLayoutOptions, buttonResetLayoutOptions;
-		static GUIStyle textFieldStyle, boxStyle, labelStyle, toggleStyle, buttonResetStyle, sliderStyle, sliderThumbStyle;
+		static GUILayoutOption[] textFieldHeadLayoutOptions, textFieldBodyPositionLayoutOptions, textFieldBodyRotationLayoutOptions, sliderLayoutOptions, sliderLayoutOptions1, buttonResetLayoutOptions;
+		static GUIStyle textFieldStyle, boxStyle, labelStyle, toggleStyle, buttonResetStyle, sliderStyle, sliderStyle1, sliderThumbStyle;
 
 		void OnGUI()
 		{
@@ -34,6 +31,7 @@ namespace SmileForTheCamera
 			textFieldBodyPositionLayoutOptions = new[] { GUILayout.Width(181f), GUILayout.Height(20f) };
 			textFieldBodyRotationLayoutOptions = new[] { GUILayout.Width(63f), GUILayout.Height(20f) };
 			sliderLayoutOptions = new[] { GUILayout.Width(114f), GUILayout.Height(20f) };
+			sliderLayoutOptions1 = new[] { GUILayout.Width(181f), GUILayout.Height(11f) };
 			buttonResetLayoutOptions = new[] { GUILayout.Width(95f), GUILayout.Height(20f) };
 			textFieldStyle = new GUIStyle(GUI.skin.textField) { padding = new RectOffset(4, 4, 3, 3) };
 			boxStyle = new GUIStyle(GUI.skin.box) { padding = new RectOffset(4, 4, 3, 3), alignment = TextAnchor.MiddleLeft };
@@ -41,6 +39,7 @@ namespace SmileForTheCamera
 			toggleStyle = new GUIStyle(GUI.skin.toggle) { margin = new RectOffset(4, 4, 4, 6) };
 			buttonResetStyle = new GUIStyle(GUI.skin.button) { margin = new RectOffset(37, 4, 4, 4), padding = new RectOffset(4, 4, 0, 0) };
 			sliderStyle = new GUIStyle(GUI.skin.horizontalSlider) { margin = new RectOffset(4, 4, 8, 8) };
+			sliderStyle1 = new GUIStyle(GUI.skin.horizontalSlider);
 			sliderThumbStyle = new GUIStyle(GUI.skin.horizontalSliderThumb);
 
 			GUILayout.BeginVertical();
@@ -48,14 +47,39 @@ namespace SmileForTheCamera
 			GUILayout.Space(10f);
 			GUILayout.BeginHorizontal();
 			GUILayout.Label(" Animating", GUILayout.Width(100f));
-			if (Core.IsEnabled != GUILayout.Toggle(Core.IsEnabled, Core.IsEnabled ? " Enabled" : " Disabled"))
+			if (Core.IsEnabled != GUILayout.Toggle(Core.IsEnabled, Core.IsEnabled ? " Enabled" : " Disabled", GUILayout.Width(340f)))
 			{
 				Core.IsEnabled = !Core.IsEnabled;
 				if (Core.IsEnabled && FlightGlobals.ActiveVessel != null) Core.InitialOrbit = new Orbit(FlightGlobals.ActiveVessel.orbit); // don't care because null ActiveVessel means AnimatedKerbals.Count == 0
 				Core.ResetAnimatedKerbals();
 				Core.WereNoKerbalsFound = Core.AnimatedKerbals.Count == 0;
 			}
+			if (Core.IsEditorOpen != GUILayout.Toggle(Core.IsEditorOpen, " Edit alignment"))
+			{
+				Core.IsEditorOpen = !Core.IsEditorOpen;
+			}
 			GUILayout.EndHorizontal();
+			if (Core.IsEditorOpen)
+			{
+				GUILayout.Space(11f);
+				for (int i = 0; i < 2; i++) // male female
+				{
+					for (int j = 0; j < 3; j++) // head eyeL eyeR
+					{
+						GUILayout.Label(String.Format(" {0} ({1})", Settings.configTagsPart[j], Settings.configTagsGender[i]));
+						for (int k = 0; k < 3; k++) // x y z
+						{
+							GUILayout.BeginHorizontal();
+							TextFieldFromFloat(ref Settings.OffsetAdjustment[i][j][k], ref Settings.strOffsetAdjustment[i][j][k], textFieldBodyRotationLayoutOptions);
+							float value = Settings.OffsetAdjustment[i][j][k];
+							Settings.OffsetAdjustment[i][j][k] = GUILayout.HorizontalSlider(Settings.OffsetAdjustment[i][j][k], -180f, 180f, sliderStyle, sliderThumbStyle);
+							if (Settings.OffsetAdjustment[i][j][k] != value) Settings.strOffsetAdjustment[i][j][k] = Settings.OffsetAdjustment[i][j][k].ToString();
+							GUILayout.EndHorizontal();
+						}
+					}
+					GUILayout.Space((i == 0) ? 10f : 4f);
+				}
+			}
 
 			if (!Core.IsEnabled) ColorizeFieldIsEnabled(textFieldStyle, false);
 			if (Core.AnimatedKerbals.Count != 0)
@@ -70,8 +94,7 @@ namespace SmileForTheCamera
 					}
 					GUILayout.Space(15f);
 					GUILayout.BeginHorizontal();
-					//if (kerbal.isAnimated != GUILayout.Toggle(kerbal.isAnimated, " sdsda", GUILayout.Width(452f)))
-					if (kerbal.isAnimated != GUILayout.Toggle(kerbal.isAnimated, " " + kerbal.kerbalEVA.part.protoModuleCrew[0].name, GUILayout.Width(452f)))
+					if (kerbal.isAnimated != GUILayout.Toggle(kerbal.isAnimated, " " + kerbal.name, GUILayout.Width(452f)))
 					{
 						kerbal.isAnimated = !kerbal.isAnimated;
 						kerbal.ResetBodyTransform();
@@ -85,9 +108,9 @@ namespace SmileForTheCamera
 						GUILayout.BeginHorizontal();
 						if (i == 0)
 						{
-							if (kerbal.isHeadAnimated != GUILayout.Toggle(kerbal.isHeadAnimated, kerbalParts[i], toggleStyle)) { kerbal.isHeadAnimated = !kerbal.isHeadAnimated; }
+							if (kerbal.isHeadAnimated != GUILayout.Toggle(kerbal.isHeadAnimated, " " + Settings.configTagsPart[i], toggleStyle)) { kerbal.isHeadAnimated = !kerbal.isHeadAnimated; }
 						} else {
-							GUILayout.Label(kerbalParts[i], labelStyle, textFieldHeadLayoutOptions);
+							GUILayout.Label(Settings.configTagsPart[i], labelStyle, textFieldHeadLayoutOptions);
 						}
 						if (i == 2)
 						{
@@ -96,7 +119,7 @@ namespace SmileForTheCamera
 						GUILayout.EndHorizontal();
 
 						GUILayout.BeginHorizontal();
-						for (int k = 0; k < 4; k++) GUILayout.Label(rotationParams[k], labelStyle, textFieldHeadLayoutOptions);
+						for (int k = 0; k < 4; k++) GUILayout.Label(Settings.configTagsParam[k], labelStyle, textFieldHeadLayoutOptions);
 						GUILayout.EndHorizontal();
 
 						for (int j = 0; j < 3; j++) // x y z
@@ -129,44 +152,14 @@ namespace SmileForTheCamera
 						kerbal.ResetBodyTransform();
 					}
 					ThingTransformTextFields(kerbal, kerbal.isAnimated && kerbal.isBodyAnimated);
-					/*if (Core.IsEnabled && kerbal.isAnimated && kerbal.isBodyAnimated)
-					{
-						GUILayout.BeginHorizontal();
-						FloatToTextField(ref kerbal.bodyPosition.x, ref kerbal.strBodyPosition[0], textFieldStyle, textFieldBodyPositionLayoutOptions);
-						FloatToTextField(ref kerbal.bodyPosition.y, ref kerbal.strBodyPosition[1], textFieldStyle, textFieldBodyPositionLayoutOptions);
-						FloatToTextField(ref kerbal.bodyPosition.z, ref kerbal.strBodyPosition[2], textFieldStyle, textFieldBodyPositionLayoutOptions);
-						GUILayout.EndHorizontal();
-						GUILayout.BeginHorizontal();
-						for (int j = 0; j < 3; j++)
-						{
-							float value = kerbal.bodyRotation[j];
-							FloatToTextField(ref value, ref kerbal.strBodyRotation[j], textFieldStyle, textFieldBodyRotationLayoutOptions);
-							kerbal.bodyRotation[j] = value;
-							kerbal.bodyRotation[j] = GUILayout.HorizontalSlider(kerbal.bodyRotation[j], 0f, 360f, sliderStyle, sliderThumbStyle, sliderLayoutOptions);
-							if (kerbal.bodyRotation[j] != value) kerbal.strBodyRotation[j] = kerbal.bodyRotation[j].ToString(); // the one who's in the way, he will help us
-						}
-						GUILayout.EndHorizontal();
-					} else {
-						GUILayout.BeginHorizontal();
-						Vector3 position = kerbal.isInitiallyLanded ? kerbal.body.position : kerbal.body.position - (Vector3)Core.InitialOrbit.getPositionAtUT(Planetarium.GetUniversalTime());
-						for (int j = 0; j < 3; j++)
-							GUILayout.Box(position[j].ToString(), boxStyle, textFieldBodyPositionLayoutOptions);
-						GUILayout.EndHorizontal();
-						GUILayout.BeginHorizontal();
-						for (int j = 0; j < 3; j++)
-						{
-							GUILayout.Box(kerbal.body.localEulerAngles[j].ToString("F1"), boxStyle, textFieldBodyRotationLayoutOptions);
-							GUILayout.HorizontalSlider(kerbal.body.localEulerAngles[j], 0f, 360f, sliderStyle, sliderThumbStyle, sliderLayoutOptions);
-						}
-						GUILayout.EndHorizontal();
-					}*/
 					GUILayout.Space(4f);
 				}
 			} else {
 				if (Core.WereNoKerbalsFound)
 				{
-					GUILayout.Label(" No kerbals found to animate (•ิ_•ิ)?  ԅ(≖‿≖ԅ)");
 					GUILayout.Space(15f);
+					GUILayout.Label(" No kerbals found to animate (•ิ_•ิ)?  ԅ(≖‿≖ԅ)");
+					if (Core.AnimatedVessels.Count == 0) GUILayout.Space(15f);
 				}
 			}
 
@@ -179,44 +172,13 @@ namespace SmileForTheCamera
 				}
 				GUILayout.Space(15f);
 				GUILayout.BeginHorizontal();
-				if (vessel.isAnimated != GUILayout.Toggle(vessel.isAnimated, " " + vessel.vessel.vesselName, GUILayout.Width(452f)))
+				if (vessel.isAnimated != GUILayout.Toggle(vessel.isAnimated, " " + vessel.name, GUILayout.Width(452f)))
 				{
 					vessel.isAnimated = !vessel.isAnimated;
 					vessel.ResetTransform();
 				}
 				GUILayout.EndHorizontal();
 				ThingTransformTextFields(vessel, vessel.isAnimated);
-				/*if (Core.IsEnabled && vessel.isAnimated)
-				{
-					GUILayout.BeginHorizontal();
-					FloatToTextField(ref vessel.position.x, ref vessel.strPosition[0], textFieldStyle, textFieldBodyPositionLayoutOptions);
-					FloatToTextField(ref vessel.position.y, ref vessel.strPosition[1], textFieldStyle, textFieldBodyPositionLayoutOptions);
-					FloatToTextField(ref vessel.position.z, ref vessel.strPosition[2], textFieldStyle, textFieldBodyPositionLayoutOptions);
-					GUILayout.EndHorizontal();
-					GUILayout.BeginHorizontal();
-					for (int j = 0; j < 3; j++)
-					{
-						float value = vessel.rotation[j];
-						FloatToTextField(ref value, ref vessel.strRotation[j], textFieldStyle, textFieldBodyRotationLayoutOptions);
-						vessel.rotation[j] = value;
-						vessel.rotation[j] = GUILayout.HorizontalSlider(vessel.rotation[j], 0f, 360f, sliderStyle, sliderThumbStyle, sliderLayoutOptions);
-						if (vessel.rotation[j] != value) vessel.strRotation[j] = vessel.rotation[j].ToString();
-					}
-					GUILayout.EndHorizontal();
-				} else {
-					GUILayout.BeginHorizontal();
-					Vector3 position = vessel.isInitiallyLanded ? vessel.transform.position : vessel.transform.position - (Vector3)Core.InitialOrbit.getPositionAtUT(Planetarium.GetUniversalTime());
-					for (int j = 0; j < 3; j++)
-						GUILayout.Box(position[j].ToString(), boxStyle, textFieldBodyPositionLayoutOptions);
-					GUILayout.EndHorizontal();
-					GUILayout.BeginHorizontal();
-					for (int j = 0; j < 3; j++)
-					{
-						GUILayout.Box(vessel.transform.localEulerAngles[j].ToString("F1"), boxStyle, textFieldBodyRotationLayoutOptions);
-						GUILayout.HorizontalSlider(vessel.transform.localEulerAngles[j], 0f, 360f, sliderStyle, sliderThumbStyle, sliderLayoutOptions);
-					}
-					GUILayout.EndHorizontal();
-				}*/
 				GUILayout.Space(4f);
 			}
 
@@ -241,7 +203,7 @@ namespace SmileForTheCamera
 					float value = thing.position[j];
 					float integer = Mathf.Floor(value);
 					float fraction = value - integer;
-					fraction = GUILayout.HorizontalSlider(fraction, 0f, 1f, sliderStyle, sliderThumbStyle, textFieldBodyPositionLayoutOptions);
+					fraction = GUILayout.HorizontalSlider(fraction, 0f, 1f, sliderStyle1, sliderThumbStyle, sliderLayoutOptions1);
 					if (fraction != 0f && fraction != 1f) thing.position[j] = integer + fraction;
 					if (thing.position[j] != value) thing.strPosition[j] = thing.position[j].ToString();
 				}
@@ -253,7 +215,7 @@ namespace SmileForTheCamera
 					TextFieldFromFloat(ref value, ref thing.strRotation[j], textFieldBodyRotationLayoutOptions);
 					thing.rotation[j] = value;
 					thing.rotation[j] = GUILayout.HorizontalSlider(thing.rotation[j], 0f, 360f, sliderStyle, sliderThumbStyle, sliderLayoutOptions);
-					if (thing.rotation[j] != value) thing.strRotation[j] = thing.rotation[j].ToString(); // the one who's in the way, he will help us
+					if (thing.rotation[j] != value) thing.strRotation[j] = thing.rotation[j].ToString();
 				}
 				GUILayout.EndHorizontal();
 			} else {
@@ -264,7 +226,7 @@ namespace SmileForTheCamera
 				GUILayout.EndHorizontal();
 				GUILayout.BeginHorizontal();
 				for (int j = 0; j < 3; j++)
-					GUILayout.HorizontalSlider(position[j] - Mathf.Floor(position[j]), 0f, 1f, sliderStyle, sliderThumbStyle, textFieldBodyPositionLayoutOptions);
+					GUILayout.HorizontalSlider(position[j] - Mathf.Floor(position[j]), 0f, 1f, sliderStyle1, sliderThumbStyle, sliderLayoutOptions1);
 				GUILayout.EndHorizontal();
 				GUILayout.BeginHorizontal();
 				for (int j = 0; j < 3; j++)
@@ -318,8 +280,6 @@ namespace SmileForTheCamera
 			GameEvents.onShowUI.Add(OnShowUI);
 			GameEvents.onHideUI.Add(OnHideUI);
 			//Initialize();
-		//	Core.AnimatedKerbals.Add(new AnimatedKerbal());
-		//	Core.AnimatedKerbals.Add(new AnimatedKerbal());
 		}
 
 	}

@@ -10,9 +10,7 @@ namespace SmileForTheCamera
 	public static class Core
 	{
 
-		public static bool IsGUIVisible = false;
-		public static bool IsEnabled = false;
-		public static bool WereNoKerbalsFound = false;
+		public static bool IsEnabled = false, IsGUIVisible = false, IsEditorOpen = false, WereNoKerbalsFound = false;
 		public static List<AnimatedKerbal> AnimatedKerbals = new List<AnimatedKerbal>();
 		public static List<AnimatedVessel> AnimatedVessels = new List<AnimatedVessel>();
 		public static Orbit InitialOrbit;
@@ -60,62 +58,71 @@ namespace SmileForTheCamera
 	public static class Settings
 	{
 
-		public static Quaternion MaleHeadOffset = Quaternion.Euler(0,  -88, -108);
-		public static Quaternion MaleEyeLOffset = Quaternion.Euler(0,  -59,    4);
-		public static Quaternion MaleEyeROffset = Quaternion.Euler(0, -152,   -4); // (0, 118, -4) + (0, 90, 0)
-		public static Quaternion FemaleHeadOffset = Quaternion.Euler(0,  -88, -108);
-		public static Quaternion FemaleEyeLOffset = Quaternion.Euler(0,  -66,    0);
-		public static Quaternion FemaleEyeROffset = Quaternion.Euler(0, -156,   -6); // (0, 114, -6) + (0, 90, 0)
-
-		public static float[][][] DefaultRotationMale = new float[][][]
+		public static float[][][] OffsetDefault = new float[][][]
 		{
-			// Head
-			new float[][] { //min left right max
-				new float[] { -15, -10,  10,  15 },
-				new float[] { -10,  -5,   5,  10 },
-				new float[] { -12, -10,  -4,   0 }
-			},
-			// EyeL
+			// Male
 			new float[][] {
-				new float[] { -15, -10,  10,  15 },
-				new float[] {   0,   5,  10,  15 },
-				new float[] { -10,   0,  10,  30 }
+				new float[] { 0,  -88, -108 },
+				new float[] { 0,  -59,    4 },
+				new float[] { 0, -152,   -4 } // (0, 118, -4) + (0, 90, 0)
 			},
-			// EyeR
+			// Female
 			new float[][] {
-				new float[] { -80, -10,  20,  50 },
-				new float[] { -40, -35, -25, -20 },
-				new float[] { -10,  10,  40,  50 }
+				new float[] { 0,  -88, -108 },
+				new float[] { 0,  -66,    0 },
+				new float[] { 0, -156,   -6 } // (0, 114, -6) + (0, 90, 0)
 			}
 		};
-		public static float[][][] DefaultRotationFemale =
+		public static Quaternion[][] OffsetQuaternions = OffsetDefault.Select(o => o.Select(oo => Quaternion.Euler(oo[0], oo[1], oo[2])).ToArray()).ToArray();
+		public static float[][][] OffsetAdjustment = OffsetDefault.Select(o => o.Select(oo => oo.Select(ooo => 0f).ToArray()).ToArray()).ToArray();
+		public static string[][][] strOffsetAdjustment = OffsetDefault.Select(o => o.Select(oo => oo.Select(ooo => "0").ToArray()).ToArray()).ToArray();
+
+		public static float[][][][] RotationLimits = new float[][][][]
 		{
-			// Head
-			new float[][] {
-				new float[] { -15, -10,  10,  15 },
-				new float[] { -10,  -5,   5,  10 },
-				new float[] { -12, -10,  -4,   0 }
+			// Male
+			new float[][][] {
+				new float[][] { // min left right max
+					new float[] { -15, -10,  10,  15 }, // Head
+					new float[] { -10,  -5,   5,  10 },
+					new float[] { -12, -10,  -4,   0 }
+				},
+				new float[][] {
+					new float[] { -15, -10,  10,  15 }, // EyeL
+					new float[] {   0,   5,  10,  15 },
+					new float[] { -10,   0,  10,  30 }
+				},
+				new float[][] {
+					new float[] { -80, -10,  20,  50 }, // EyeR
+					new float[] { -40, -35, -25, -20 },
+					new float[] { -10,  10,  40,  50 }
+				}
 			},
-			// EyeL
-			new float[][] {
-				new float[] { -15,  -5,  10,  20 },
-				new float[] {   5,  10,  15,  20 },
-				new float[] { -10,   0,  10,  20 }
-			},
-			// EyeR
-			new float[][] {
-				new float[] { -20, -10,   0,  10 },
-				new float[] { -45, -35, -30, -20 },
-				new float[] { -10,   0,  20,  30 }
+			// Female
+			new float[][][] {
+				new float[][] {
+					new float[] { -15, -10,  10,  15 },
+					new float[] { -10,  -5,   5,  10 },
+					new float[] { -12, -10,  -4,   0 }
+				},
+				new float[][] {
+					new float[] { -15,  -5,  10,  20 },
+					new float[] {   5,  10,  15,  20 },
+					new float[] { -10,   0,  10,  20 }
+				},
+				new float[][] {
+					new float[] { -20, -10,   0,  10 },
+					new float[] { -45, -35, -30, -20 },
+					new float[] { -10,   0,  20,  30 }
+				}
 			}
 		};
 
 		static string pluginDataDir = Path.Combine(KSPUtil.ApplicationRootPath, "GameData/BiozTech/PluginData");
 		static string settingsFileName = Path.Combine(pluginDataDir, "SmileForTheCameraSettings.cfg");
 		static string configTagMain = "SmileForTheCameraSettings";
-		static string[] configTagsPart = { "Head", "EyeL", "EyeR" };
-		static string[] configGenders = { "Male", "Female" };
-		static string[] configTagsParam = { "Min", "Left", "Right", "Max" };
+		public static string[] configTagsGender = { "Male", "Female" };
+		public static string[] configTagsPart = { "Head", "EyeL", "EyeR" };
+		public static string[] configTagsParam = { "Min", "Left", "Right", "Max" };
 
 		public static void Load()
 		{
@@ -142,25 +149,25 @@ namespace SmileForTheCamera
 				string tagCurrent;
 				for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
 				{
-					tagCurrent = configTagsPart[i] + configGenders[0] + configTagsParam[j];
+					tagCurrent = configTagsPart[i] + configTagsGender[0] + configTagsParam[j];
 					isOkCurrent = configNode.HasValue(tagCurrent);
 					if (isOkCurrent)
 					{
 						float[] float3;
 						isOkCurrent = TryParseFloat3(configNode.GetValue(tagCurrent), out float3);
-						if (isOkCurrent) DefaultRotationMale[i][j] = float3;
+						if (isOkCurrent) RotationLimits[0][i][j] = float3;
 					}
 					isOk &= isOkCurrent;
 				}
 				for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
 				{
-					tagCurrent = configTagsPart[i] + configGenders[1] + configTagsParam[j];
+					tagCurrent = configTagsPart[i] + configTagsGender[1] + configTagsParam[j];
 					isOkCurrent = configNode.HasValue(tagCurrent);
 					if (isOkCurrent)
 					{
 						float[] float3;
 						isOkCurrent = TryParseFloat3(configNode.GetValue(tagCurrent), out float3);
-						if (isOkCurrent) DefaultRotationFemale[i][j] = float3;
+						if (isOkCurrent) RotationLimits[1][i][j] = float3;
 					}
 					isOk &= isOkCurrent;
 				}
@@ -186,11 +193,11 @@ namespace SmileForTheCamera
 			ConfigNode configNode = new ConfigNode(configTagMain);
 			for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
 			{
-				configNode.AddValue(configTagsPart[i] + configGenders[0] + configTagsParam[j], Float3ToString(DefaultRotationMale[i][j]));
+				configNode.AddValue(configTagsPart[i] + configTagsGender[0] + configTagsParam[j], Float3ToString(RotationLimits[0][i][j]));
 			}
 			for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
 			{
-				configNode.AddValue(configTagsPart[i] + configGenders[1] + configTagsParam[j], Float3ToString(DefaultRotationFemale[i][j]));
+				configNode.AddValue(configTagsPart[i] + configTagsGender[1] + configTagsParam[j], Float3ToString(RotationLimits[1][i][j]));
 			}
 			if (!Directory.Exists(pluginDataDir)) Directory.CreateDirectory(pluginDataDir);
 			File.WriteAllText(settingsFileName, configNode.ToString(), System.Text.Encoding.Unicode);
@@ -201,6 +208,16 @@ namespace SmileForTheCamera
 			if (File.Exists(settingsFileBackupName)) File.Delete(settingsFileBackupName);
 			File.Move(settingsFileName, settingsFileBackupName);
 			Save();
+		}
+
+		public static void UpdateOffset()
+		{
+			OffsetQuaternions[0][0] = Quaternion.Euler(OffsetDefault[0][0][0] + OffsetAdjustment[0][0][0], OffsetDefault[0][0][1] + OffsetAdjustment[0][0][1], OffsetDefault[0][0][2] + OffsetAdjustment[0][0][2]);
+			OffsetQuaternions[0][1] = Quaternion.Euler(OffsetDefault[0][1][0] + OffsetAdjustment[0][1][0], OffsetDefault[0][1][1] + OffsetAdjustment[0][1][1], OffsetDefault[0][1][2] + OffsetAdjustment[0][1][2]);
+			OffsetQuaternions[0][2] = Quaternion.Euler(OffsetDefault[0][2][0] + OffsetAdjustment[0][2][0], OffsetDefault[0][2][1] + OffsetAdjustment[0][2][1], OffsetDefault[0][2][2] + OffsetAdjustment[0][2][2]);
+			OffsetQuaternions[1][0] = Quaternion.Euler(OffsetDefault[1][0][0] + OffsetAdjustment[1][0][0], OffsetDefault[1][0][1] + OffsetAdjustment[1][0][1], OffsetDefault[1][0][2] + OffsetAdjustment[1][0][2]);
+			OffsetQuaternions[1][1] = Quaternion.Euler(OffsetDefault[1][1][0] + OffsetAdjustment[1][1][0], OffsetDefault[1][1][1] + OffsetAdjustment[1][1][1], OffsetDefault[1][1][2] + OffsetAdjustment[1][1][2]);
+			OffsetQuaternions[1][2] = Quaternion.Euler(OffsetDefault[1][2][0] + OffsetAdjustment[1][2][0], OffsetDefault[1][2][1] + OffsetAdjustment[1][2][1], OffsetDefault[1][2][2] + OffsetAdjustment[1][2][2]);
 		}
 
 		static string Float3ToString(float[] f)
