@@ -73,9 +73,6 @@ namespace SmileForTheCamera
 				new float[] { 0, -156,   -6 } // (0, 114, -6) + (0, 90, 0)
 			}
 		};
-		public static Quaternion[][] OffsetQuaternions = OffsetDefault.Select(o => o.Select(oo => Quaternion.Euler(oo[0], oo[1], oo[2])).ToArray()).ToArray();
-		public static float[][][] OffsetAdjustment = OffsetDefault.Select(o => o.Select(oo => oo.Select(ooo => 0f).ToArray()).ToArray()).ToArray();
-		public static string[][][] strOffsetAdjustment = OffsetDefault.Select(o => o.Select(oo => oo.Select(ooo => "0").ToArray()).ToArray()).ToArray();
 
 		public static float[][][][] RotationLimits = new float[][][][]
 		{
@@ -117,12 +114,14 @@ namespace SmileForTheCamera
 			}
 		};
 
+		public static Quaternion[][] OffsetQuaternions = OffsetDefault.Select(o => o.Select(oo => Quaternion.Euler(oo[0], oo[1], oo[2])).ToArray()).ToArray();
+		public static float[][][] OffsetAdjustment = OffsetDefault.Select(o => o.Select(oo => oo.Select(ooo => 0f).ToArray()).ToArray()).ToArray();
+		public static string[][][] strOffsetAdjustment = OffsetDefault.Select(o => o.Select(oo => oo.Select(ooo => "0").ToArray()).ToArray()).ToArray();
+
 		static string pluginDataDir = Path.Combine(KSPUtil.ApplicationRootPath, "GameData/BiozTech/PluginData");
 		static string settingsFileName = Path.Combine(pluginDataDir, "SmileForTheCameraSettings.cfg");
-		static string configTagMain = "SmileForTheCameraSettings";
-		public static string[] configTagsGender = { "Male", "Female" };
-		public static string[] configTagsPart = { "Head", "EyeL", "EyeR" };
-		public static string[] configTagsParam = { "Min", "Left", "Right", "Max" };
+		static string configTagMain = "SmileForTheCameraSettings", configTagOffset = "Offset", configTagLimits = "Limits";
+		public static string[] configTagsGender = { "Male", "Female" }, configTagsPart = { "Head", "EyeL", "EyeR" }, configAxesParam = { "X", "Y", "Z" }, configTagsParam = { "Min", "Left", "Right", "Max" };
 
 		public static void Load()
 		{
@@ -147,27 +146,27 @@ namespace SmileForTheCamera
 				bool isOkCurrent;
 
 				string tagCurrent;
-				for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
+				for (int i = 0; i < configTagsGender.Length; i++) for (int j = 0; j < configTagsPart.Length; j++)
 				{
-					tagCurrent = configTagsPart[i] + configTagsGender[0] + configTagsParam[j];
+					tagCurrent = configTagOffset + configTagsGender[i] + configTagsPart[j];
 					isOkCurrent = configNode.HasValue(tagCurrent);
 					if (isOkCurrent)
 					{
 						float[] float3;
-						isOkCurrent = TryParseFloat3(configNode.GetValue(tagCurrent), out float3);
-						if (isOkCurrent) RotationLimits[0][i][j] = float3;
+						isOkCurrent = TryParseFloatN(configNode.GetValue(tagCurrent), out float3, 3);
+						if (isOkCurrent) OffsetDefault[i][j] = float3;
 					}
 					isOk &= isOkCurrent;
 				}
-				for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
+				for (int i = 0; i < configTagsGender.Length; i++) for (int j = 0; j < configTagsPart.Length; j++) for (int k = 0; k < configAxesParam.Length; k++)
 				{
-					tagCurrent = configTagsPart[i] + configTagsGender[1] + configTagsParam[j];
+					tagCurrent = configTagLimits + configTagsGender[i] + configTagsPart[j] + configAxesParam[k];
 					isOkCurrent = configNode.HasValue(tagCurrent);
 					if (isOkCurrent)
 					{
-						float[] float3;
-						isOkCurrent = TryParseFloat3(configNode.GetValue(tagCurrent), out float3);
-						if (isOkCurrent) RotationLimits[1][i][j] = float3;
+						float[] float4;
+						isOkCurrent = TryParseFloatN(configNode.GetValue(tagCurrent), out float4, 4);
+						if (isOkCurrent) RotationLimits[i][j][k] = float4;
 					}
 					isOk &= isOkCurrent;
 				}
@@ -185,19 +184,20 @@ namespace SmileForTheCamera
 				Core.Log("Not to worry, we are still flying half a ship.");
 				Core.Log(stupid.Message);
 			}
-			//SmileForTheCameraGUI.Initialize();
+
+			OffsetQuaternions = OffsetDefault.Select(o => o.Select(oo => Quaternion.Euler(oo[0], oo[1], oo[2])).ToArray()).ToArray();
 		}
 
 		public static void Save()
 		{
 			ConfigNode configNode = new ConfigNode(configTagMain);
-			for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
+			for (int i = 0; i < configTagsGender.Length; i++) for (int j = 0; j < configTagsPart.Length; j++)
 			{
-				configNode.AddValue(configTagsPart[i] + configTagsGender[0] + configTagsParam[j], Float3ToString(RotationLimits[0][i][j]));
+				configNode.AddValue(configTagOffset + configTagsGender[i] + configTagsPart[j], FloatNToString(OffsetDefault[i][j], 3));
 			}
-			for (int i = 0; i < configTagsPart.Length; i++) for (int j = 0; j < configTagsParam.Length; j++)
+			for (int i = 0; i < configTagsGender.Length; i++) for (int j = 0; j < configTagsPart.Length; j++) for (int k = 0; k < configAxesParam.Length; k++)
 			{
-				configNode.AddValue(configTagsPart[i] + configTagsGender[1] + configTagsParam[j], Float3ToString(RotationLimits[1][i][j]));
+				configNode.AddValue(configTagLimits + configTagsGender[i] + configTagsPart[j] + configAxesParam[k], FloatNToString(RotationLimits[i][j][k], 4));
 			}
 			if (!Directory.Exists(pluginDataDir)) Directory.CreateDirectory(pluginDataDir);
 			File.WriteAllText(settingsFileName, configNode.ToString(), System.Text.Encoding.Unicode);
@@ -220,15 +220,17 @@ namespace SmileForTheCamera
 			OffsetQuaternions[1][2] = Quaternion.Euler(OffsetDefault[1][2][0] + OffsetAdjustment[1][2][0], OffsetDefault[1][2][1] + OffsetAdjustment[1][2][1], OffsetDefault[1][2][2] + OffsetAdjustment[1][2][2]);
 		}
 
-		static string Float3ToString(float[] f)
+		static string FloatNToString(float[] f, int length)
 		{
-			if (f.Length != 3)
+			if (f.Length != length)
 			{
-				throw new Exception("Array length is not 3. Really? o_O");
+				throw new Exception("Array length is not " + length);
 			}
-			return String.Format("{0},{1},{2}", f[0], f[1], f[2]);
+			string output = string.Empty;
+			for (int i = 0; i < length-1; i++) output += f[i] + ", ";
+			return output + f[length-1];
 		}
-		static bool TryParseFloat3(string s, out float[] result)
+		static bool TryParseFloatN(string s, out float[] result, int length)
 		{
 			result = null;
 			try
@@ -237,13 +239,13 @@ namespace SmileForTheCamera
 			}
 			catch (Exception stupid)
 			{
-				Core.Log("Could not parse to float3: " + s);
+				Core.Log(String.Format("Could not parse to float{0}: {1}", length, s));
 				Core.Log(stupid.Message);
 				return false;
 			}
-			if (result.Length != 3)
+			if (result.Length != length)
 			{
-				Core.Log(String.Format("Could not parse to float3. Number of parsed values is {0}.", result.Length));
+				Core.Log(String.Format("Could not parse to float{0}. Number of parsed values is {1}.", length, result.Length));
 				return false;
 			}
 			return true;

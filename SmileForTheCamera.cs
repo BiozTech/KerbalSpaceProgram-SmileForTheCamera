@@ -29,7 +29,7 @@ namespace SmileForTheCamera
 		void Awake()
 		{
 			DontDestroyOnLoad(gameObject);
-			//Settings.Load();
+			Settings.Load();
 		}
 
 	}
