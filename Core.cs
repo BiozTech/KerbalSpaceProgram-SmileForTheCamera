@@ -24,7 +24,7 @@ namespace SmileForTheCamera
 				AnimatedKerbal newKerbal = AnimatedKerbals.Find(o => o.kerbalEVA == kerbalEVA);
 				if (newKerbal != null)
 				{
-					newKerbal.ResetBodyTransform();
+					newKerbal.ResetBody();
 					newKerbal.ResetHeadAngles();
 				} else {
 					newKerbal = new AnimatedKerbal(kerbalEVA);
@@ -239,13 +239,13 @@ namespace SmileForTheCamera
 			}
 			catch (Exception stupid)
 			{
-				Core.Log(String.Format("Could not parse to float{0}: {1}", length, s));
+				Core.Log(String.Format("Could not parse to float[{0}]: {1}", length, s));
 				Core.Log(stupid.Message);
 				return false;
 			}
 			if (result.Length != length)
 			{
-				Core.Log(String.Format("Could not parse to float{0}. Number of parsed values is {1}.", length, result.Length));
+				Core.Log(String.Format("Could not parse to float[{0}]. Number of parsed values is {1}.", length, result.Length));
 				return false;
 			}
 			return true;

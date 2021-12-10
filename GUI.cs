@@ -94,10 +94,10 @@ namespace SmileForTheCamera
 					}
 					GUILayout.Space(15f);
 					GUILayout.BeginHorizontal();
-					if (kerbal.isAnimated != GUILayout.Toggle(kerbal.isAnimated, " " + kerbal.name, GUILayout.Width(452f)))
+					if (kerbal.isAnimated != GUILayout.Toggle(kerbal.isAnimated, " " + kerbal.name))
 					{
 						kerbal.isAnimated = !kerbal.isAnimated;
-						kerbal.ResetBodyTransform();
+						kerbal.ResetBody();
 					}
 					GUILayout.EndHorizontal();
 
@@ -108,7 +108,15 @@ namespace SmileForTheCamera
 						GUILayout.BeginHorizontal();
 						if (i == 0)
 						{
-							if (kerbal.isHeadAnimated != GUILayout.Toggle(kerbal.isHeadAnimated, " " + Settings.configTagsPart[i], styleToggle)) { kerbal.isHeadAnimated = !kerbal.isHeadAnimated; }
+							if (kerbal.isHeadAnimated != GUILayout.Toggle(kerbal.isHeadAnimated, " " + Settings.configTagsPart[i], styleToggle, GUILayout.Width(55f)))
+							{
+								kerbal.isHeadAnimated = !kerbal.isHeadAnimated;
+							}
+							if (kerbal.isFaceFreezed != GUILayout.Toggle(kerbal.isFaceFreezed, " Freeze face"))
+							{
+								kerbal.isFaceFreezed = !kerbal.isFaceFreezed;
+								kerbal.ResetFaceBones();
+							}
 						} else {
 							GUILayout.Label(Settings.configTagsPart[i], styleLabel, layoutTextFieldRotationHead);
 						}
@@ -149,7 +157,7 @@ namespace SmileForTheCamera
 					if (kerbal.isBodyAnimated != GUILayout.Toggle(kerbal.isBodyAnimated, " Body"))
 					{
 						kerbal.isBodyAnimated = !kerbal.isBodyAnimated;
-						kerbal.ResetBodyTransform();
+						kerbal.ResetBody();
 					}
 					ThingTransformTextFields(kerbal, kerbal.isAnimated && kerbal.isBodyAnimated);
 					GUILayout.Space(4f);

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
 
@@ -38,12 +39,15 @@ namespace SmileForTheCamera
 	{
 
 		public KerbalEVA kerbalEVA;
-		public Transform neck, head, eyeL, eyeR;
+		public Transform neck, eyeL, eyeR;
 		public float[][][] headRotation;
 		public string[][][] strHeadRotation;
-		public bool isBodyAnimated = false, isHeadAnimated = true, isMale = true;
-
+		public bool isBodyAnimated = false, isHeadAnimated = true, isFaceFreezed = false, isMale = true;
+		List<Bone> faceBones = new List<Bone>();
 		Quaternion headOffset, eyeLOffset, eyeROffset;
+
+		const string pathLowerJaw = "globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_lowerJaw01/";
+		const string pathUpperJaw = "globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_upperJaw01/";
 
 		public AnimatedKerbal(KerbalEVA kerbalEVA)
 		{
@@ -51,15 +55,34 @@ namespace SmileForTheCamera
 			vessel = this.kerbalEVA.vessel;
 			transform = this.kerbalEVA.gameObject.transform;
 			this.neck = transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01");
-			this.head = transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01");
-			this.eyeL = transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_upperJaw01/jntDrv_l_eye01");
-			this.eyeR = transform.Find("globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_upperJaw01/jntDrv_r_eye01");
+			this.eyeL = transform.Find(pathUpperJaw + "jntDrv_l_eye01");
+			this.eyeR = transform.Find(pathUpperJaw + "jntDrv_r_eye01");
+			AddFaceBone(pathLowerJaw);
+			AddFaceBone(pathLowerJaw + "bn_lowerTeeth01");
+			AddFaceBone(pathLowerJaw + "bn_l_mouthCorner01");
+			AddFaceBone(pathLowerJaw + "bn_l_mouthLow_b01");
+			AddFaceBone(pathLowerJaw + "bn_l_mouthLow_c01");
+			AddFaceBone(pathLowerJaw + "bn_l_mouthLow_d01");
+			AddFaceBone(pathLowerJaw + "bn_l_mouthLowMid_a01");
+			AddFaceBone(pathLowerJaw + "bn_r_mouthCorner01");
+			AddFaceBone(pathLowerJaw + "bn_r_mouthLow_b01");
+			AddFaceBone(pathLowerJaw + "bn_r_mouthLow_c01");
+			AddFaceBone(pathLowerJaw + "bn_r_mouthLow_d01");
+			AddFaceBone(pathUpperJaw);
+			AddFaceBone(pathUpperJaw + "bn_upperTeet01");
+			AddFaceBone(pathUpperJaw + "bn_l_mouthUp_b01");
+			AddFaceBone(pathUpperJaw + "bn_l_mouthUp_c01");
+			AddFaceBone(pathUpperJaw + "bn_l_mouthUp_d01");
+			AddFaceBone(pathUpperJaw + "bn_l_mouthUpMid_a01");
+			AddFaceBone(pathUpperJaw + "bn_r_mouthUp_b01");
+			AddFaceBone(pathUpperJaw + "bn_r_mouthUp_c01");
+			AddFaceBone(pathUpperJaw + "bn_r_mouthUp_d01");
 			this.isMale = this.kerbalEVA.part.protoModuleCrew[0].gender == ProtoCrewMember.Gender.Male;
 			name = this.kerbalEVA.part.protoModuleCrew[0].name;
 			isAnimated = true;
 			isInitiallyLanded = IsLanded;
 			ResetOffset(); // set headOffset, eyeLOffset, eyeROffset
-			ResetBodyTransform(); // set position, rotation, strPosition, strRotation
+			ResetBody(); // set position, rotation, strPosition, strRotation
 			ResetHeadAngles(); // set headRotation, strHeadRotation
 		}
 
@@ -82,6 +105,10 @@ namespace SmileForTheCamera
 					eyeL.localRotation = EstimateRotation(eyeL.localRotation, headRotation[1]);
 					eyeR.rotation = direction * eyeROffset;
 					eyeR.localRotation = EstimateRotation(eyeR.localRotation, headRotation[2]) * Core.TurnLeft;
+				}
+				if (isFaceFreezed)
+				{
+					foreach (Bone bone in faceBones) bone.ForceAnimate();
 				}
 			}
 		}
@@ -114,7 +141,7 @@ namespace SmileForTheCamera
 			return value;
 		}
 
-		public void ResetBodyTransform()
+		public void ResetBody()
 		{
 			if (Core.IsEnabled && isAnimated && isBodyAnimated)
 			{
@@ -139,6 +166,10 @@ namespace SmileForTheCamera
 			headRotation = Settings.RotationLimits[isMale ? 0 : 1].Select(o => o.Select(oo => oo.ToArray()).ToArray()).ToArray();
 			strHeadRotation = headRotation.Select(o => o.Select(oo => oo.Select(rot => rot.ToString()).ToArray()).ToArray()).ToArray();
 		}
+		public void ResetFaceBones()
+		{
+			foreach (Bone bone in faceBones) bone.Reset();
+		}
 		void ResetOffset()
 		{
 			if (isMale)
@@ -153,6 +184,46 @@ namespace SmileForTheCamera
 			}
 		}
 
+		void AddFaceBone(string boneName)
+		{
+			if (transform == null)
+			{
+				throw new Exception("Somehow, gameObject.transform not returned.");
+			}
+			Transform bone = transform.Find(boneName);
+			if (bone == null)
+			{
+				throw new Exception("Bone not found: " + boneName);
+			}
+			faceBones.Add(new Bone(bone));
+		}
+
+		class Bone
+		{
+
+			Transform transform;
+			public Vector3 position;
+			public Quaternion rotation;
+
+			public Bone(Transform transform)
+			{
+				this.transform = transform;
+				Reset();
+			}
+
+			public void Reset()
+			{
+				position = transform.localPosition;
+				rotation = transform.localRotation;
+			}
+			public void ForceAnimate()
+			{
+				transform.localPosition = position;
+				transform.localRotation = rotation;
+			}
+
+		}
+
 	}
 
 	public class AnimatedVessel : AnimatedThing
@@ -163,7 +234,7 @@ namespace SmileForTheCamera
 			this.vessel = vessel;
 			transform = this.vessel.vesselTransform;
 			name = this.vessel.vesselName;
-			isAnimated = true;
+			isAnimated = false;
 			isInitiallyLanded = IsLanded;
 			ResetTransform();
 		}
