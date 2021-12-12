@@ -10,12 +10,12 @@ namespace SmileForTheCamera
 	public static class Core
 	{
 
-		public static bool IsEnabled = false, IsGUIVisible = false, IsEditorOpen = false, WereNoKerbalsFound = false;
+		public static bool IsEnabled = false, IsGUIVisible = false, WereNoKerbalsFound = false;
 		public static List<AnimatedKerbal> AnimatedKerbals = new List<AnimatedKerbal>();
 		public static List<AnimatedVessel> AnimatedVessels = new List<AnimatedVessel>();
 		public static Orbit InitialOrbit;
 
-		public static void ResetAnimatedKerbals()
+		public static void ResetAnimatedObjects()
 		{
 			List<AnimatedKerbal> newKerbals = new List<AnimatedKerbal>();
 			List<AnimatedVessel> newVessels = new List<AnimatedVessel>();
@@ -44,6 +44,13 @@ namespace SmileForTheCamera
 			}
 			AnimatedKerbals = newKerbals;
 			AnimatedVessels = newVessels;
+		}
+
+		public static void ResetAll()
+		{
+			IsEnabled = false;
+			AnimatedKerbals.Clear();
+			AnimatedVessels.Clear();
 		}
 
 		public static void Log(object message)
@@ -114,10 +121,6 @@ namespace SmileForTheCamera
 			}
 		};
 
-		public static Quaternion[][] OffsetQuaternions = OffsetDefault.Select(o => o.Select(oo => Quaternion.Euler(oo[0], oo[1], oo[2])).ToArray()).ToArray();
-		public static float[][][] OffsetAdjustment = OffsetDefault.Select(o => o.Select(oo => oo.Select(ooo => 0f).ToArray()).ToArray()).ToArray();
-		public static string[][][] strOffsetAdjustment = OffsetDefault.Select(o => o.Select(oo => oo.Select(ooo => "0").ToArray()).ToArray()).ToArray();
-
 		static string pluginDataDir = Path.Combine(KSPUtil.ApplicationRootPath, "GameData/BiozTech/PluginData");
 		static string settingsFileName = Path.Combine(pluginDataDir, "SmileForTheCameraSettings.cfg");
 		static string configTagMain = "SmileForTheCameraSettings", configTagOffset = "Offset", configTagLimits = "Limits";
@@ -184,8 +187,6 @@ namespace SmileForTheCamera
 				Core.Log("Not to worry, we are still flying half a ship.");
 				Core.Log(stupid.Message);
 			}
-
-			OffsetQuaternions = OffsetDefault.Select(o => o.Select(oo => Quaternion.Euler(oo[0], oo[1], oo[2])).ToArray()).ToArray();
 		}
 
 		public static void Save()
@@ -208,16 +209,6 @@ namespace SmileForTheCamera
 			if (File.Exists(settingsFileBackupName)) File.Delete(settingsFileBackupName);
 			File.Move(settingsFileName, settingsFileBackupName);
 			Save();
-		}
-
-		public static void UpdateOffset()
-		{
-			OffsetQuaternions[0][0] = Quaternion.Euler(OffsetDefault[0][0][0] + OffsetAdjustment[0][0][0], OffsetDefault[0][0][1] + OffsetAdjustment[0][0][1], OffsetDefault[0][0][2] + OffsetAdjustment[0][0][2]);
-			OffsetQuaternions[0][1] = Quaternion.Euler(OffsetDefault[0][1][0] + OffsetAdjustment[0][1][0], OffsetDefault[0][1][1] + OffsetAdjustment[0][1][1], OffsetDefault[0][1][2] + OffsetAdjustment[0][1][2]);
-			OffsetQuaternions[0][2] = Quaternion.Euler(OffsetDefault[0][2][0] + OffsetAdjustment[0][2][0], OffsetDefault[0][2][1] + OffsetAdjustment[0][2][1], OffsetDefault[0][2][2] + OffsetAdjustment[0][2][2]);
-			OffsetQuaternions[1][0] = Quaternion.Euler(OffsetDefault[1][0][0] + OffsetAdjustment[1][0][0], OffsetDefault[1][0][1] + OffsetAdjustment[1][0][1], OffsetDefault[1][0][2] + OffsetAdjustment[1][0][2]);
-			OffsetQuaternions[1][1] = Quaternion.Euler(OffsetDefault[1][1][0] + OffsetAdjustment[1][1][0], OffsetDefault[1][1][1] + OffsetAdjustment[1][1][1], OffsetDefault[1][1][2] + OffsetAdjustment[1][1][2]);
-			OffsetQuaternions[1][2] = Quaternion.Euler(OffsetDefault[1][2][0] + OffsetAdjustment[1][2][0], OffsetDefault[1][2][1] + OffsetAdjustment[1][2][1], OffsetDefault[1][2][2] + OffsetAdjustment[1][2][2]);
 		}
 
 		static string FloatNToString(float[] f, int length)

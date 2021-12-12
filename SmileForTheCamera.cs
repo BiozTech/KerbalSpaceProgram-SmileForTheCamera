@@ -14,7 +14,6 @@ namespace SmileForTheCamera
 		{
 			if (Core.IsEnabled)
 			{
-				if (Core.IsEditorOpen) Settings.UpdateOffset();
 				Transform cam = Camera.main.transform;
 				foreach (AnimatedKerbal animatedKerbal in Core.AnimatedKerbals)
 				{
@@ -35,16 +34,19 @@ namespace SmileForTheCamera
 
 	}
 
-	public class AnimatedKerbal : AnimatedThing
+	public class AnimatedKerbal : AnimatedObject
 	{
 
 		public KerbalEVA kerbalEVA;
 		public Transform neck, eyeL, eyeR;
-		public float[][][] headRotation;
-		public string[][][] strHeadRotation;
-		public bool isBodyAnimated = false, isHeadAnimated = true, isFaceFreezed = false, isMale = true;
+		public float[][] headOffset = Settings.OffsetDefault[0].Select(o => o.Select(oo => 0f).ToArray()).ToArray();
+		public string[][] strHeadOffset = Settings.OffsetDefault[0].Select(o => o.Select(oo => "0").ToArray()).ToArray();
+		public float[][][] headLimits;
+		public string[][][] strHeadLimits;
+		public bool isBodyAnimated = false, isHeadAnimated = true, isFaceFreezed = false, isEditingOffset = false, isEditingLimits = false, isMale = true;
+		public bool[] isHeadPartLimited = { true, true, true };
 		List<Bone> faceBones = new List<Bone>();
-		Quaternion headOffset, eyeLOffset, eyeROffset;
+		Quaternion headOffsetQuaternion, eyeLOffsetQuaternion, eyeROffsetQuaternion;
 
 		const string pathLowerJaw = "globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_lowerJaw01/";
 		const string pathUpperJaw = "globalMove01/joints01/bn_spA01/bn_spB01/bn_spc01/bn_spD01/be_spE01/bn_neck01/be_neck01/bn_headPivot_a01/bn_headPivot_b01/bn_upperJaw01/";
@@ -81,9 +83,9 @@ namespace SmileForTheCamera
 			name = this.kerbalEVA.part.protoModuleCrew[0].name;
 			isAnimated = true;
 			isInitiallyLanded = IsLanded;
-			ResetOffset(); // set headOffset, eyeLOffset, eyeROffset
+			ResetOffset(); // set headOffsetQuaternion, eyeLOffsetQuaternion, eyeROffsetQuaternion
 			ResetBody(); // set position, rotation, strPosition, strRotation
-			ResetHeadAngles(); // set headRotation, strHeadRotation
+			ResetHeadAngles(); // set headLimits, strHeadLimits
 		}
 
 		public void ForceAnimate(Transform target)
@@ -97,18 +99,19 @@ namespace SmileForTheCamera
 				}
 				if (isHeadAnimated)
 				{
-					if (Core.IsEditorOpen) ResetOffset();
+					if (isEditingOffset) ResetOffset();
 					Quaternion direction = Quaternion.LookRotation(Vector3.Lerp(eyeL.position, eyeR.position, 0.5f) - target.position, transform.up);
-					neck.rotation = direction * headOffset;
-					neck.localRotation = EstimateRotation(neck.localRotation, headRotation[0]);
-					eyeL.rotation = direction * eyeLOffset;
-					eyeL.localRotation = EstimateRotation(eyeL.localRotation, headRotation[1]);
-					eyeR.rotation = direction * eyeROffset;
-					eyeR.localRotation = EstimateRotation(eyeR.localRotation, headRotation[2]) * Core.TurnLeft;
-				}
-				if (isFaceFreezed)
-				{
-					foreach (Bone bone in faceBones) bone.ForceAnimate();
+					neck.rotation = direction * headOffsetQuaternion;
+					if (isHeadPartLimited[0]) neck.localRotation = EstimateRotation(neck.localRotation, headLimits[0]);
+					eyeL.rotation = direction * eyeLOffsetQuaternion;
+					if (isHeadPartLimited[1]) eyeL.localRotation = EstimateRotation(eyeL.localRotation, headLimits[1]);
+					eyeR.rotation = direction * eyeROffsetQuaternion;
+					if (isHeadPartLimited[2]) eyeR.localRotation = EstimateRotation(eyeR.localRotation, headLimits[2]);
+					eyeR.rotation *= Core.TurnLeft;
+					if (isFaceFreezed)
+					{
+						foreach (Bone bone in faceBones) bone.ForceAnimate();
+					}
 				}
 			}
 		}
@@ -160,11 +163,13 @@ namespace SmileForTheCamera
 				rigidbody.velocity = rigidbody.angularVelocity = Vector3.zero;
 				rigidbody.constraints = doConstrain ? RigidbodyConstraints.FreezeAll : RigidbodyConstraints.None;
 			}
+			vessel.SetWorldVelocity(Vector3.zero);
+			vessel.angularVelocity = vessel.angularMomentum = Vector3.zero;
 		}
 		public void ResetHeadAngles()
 		{
-			headRotation = Settings.RotationLimits[isMale ? 0 : 1].Select(o => o.Select(oo => oo.ToArray()).ToArray()).ToArray();
-			strHeadRotation = headRotation.Select(o => o.Select(oo => oo.Select(rot => rot.ToString()).ToArray()).ToArray()).ToArray();
+			headLimits = Settings.RotationLimits[isMale ? 0 : 1].Select(o => o.Select(oo => oo.ToArray()).ToArray()).ToArray();
+			strHeadLimits = headLimits.Select(o => o.Select(oo => oo.Select(rot => rot.ToString()).ToArray()).ToArray()).ToArray();
 		}
 		public void ResetFaceBones()
 		{
@@ -174,13 +179,13 @@ namespace SmileForTheCamera
 		{
 			if (isMale)
 			{
-				headOffset = Settings.OffsetQuaternions[0][0];
-				eyeLOffset = Settings.OffsetQuaternions[0][1];
-				eyeROffset = Settings.OffsetQuaternions[0][2];
+				headOffsetQuaternion = Quaternion.Euler(Settings.OffsetDefault[0][0][0] + headOffset[0][0], Settings.OffsetDefault[0][0][1] + headOffset[0][1], Settings.OffsetDefault[0][0][2] + headOffset[0][2]);
+				eyeLOffsetQuaternion = Quaternion.Euler(Settings.OffsetDefault[0][1][0] + headOffset[1][0], Settings.OffsetDefault[0][1][1] + headOffset[1][1], Settings.OffsetDefault[0][1][2] + headOffset[1][2]);
+				eyeROffsetQuaternion = Quaternion.Euler(Settings.OffsetDefault[0][2][0] + headOffset[2][0], Settings.OffsetDefault[0][2][1] + headOffset[2][1], Settings.OffsetDefault[0][2][2] + headOffset[2][2]);
 			} else {
-				headOffset = Settings.OffsetQuaternions[1][0];
-				eyeLOffset = Settings.OffsetQuaternions[1][1];
-				eyeROffset = Settings.OffsetQuaternions[1][2];
+				headOffsetQuaternion = Quaternion.Euler(Settings.OffsetDefault[1][0][0] + headOffset[0][0], Settings.OffsetDefault[1][0][1] + headOffset[0][1], Settings.OffsetDefault[1][0][2] + headOffset[0][2]);
+				eyeLOffsetQuaternion = Quaternion.Euler(Settings.OffsetDefault[1][1][0] + headOffset[1][0], Settings.OffsetDefault[1][1][1] + headOffset[1][1], Settings.OffsetDefault[1][1][2] + headOffset[1][2]);
+				eyeROffsetQuaternion = Quaternion.Euler(Settings.OffsetDefault[1][2][0] + headOffset[2][0], Settings.OffsetDefault[1][2][1] + headOffset[2][1], Settings.OffsetDefault[1][2][2] + headOffset[2][2]);
 			}
 		}
 
@@ -226,7 +231,7 @@ namespace SmileForTheCamera
 
 	}
 
-	public class AnimatedVessel : AnimatedThing
+	public class AnimatedVessel : AnimatedObject
 	{
 
 		public AnimatedVessel(Vessel vessel)
@@ -276,7 +281,7 @@ namespace SmileForTheCamera
 
 	}
 
-	public class AnimatedThing
+	public class AnimatedObject
 	{
 		public Vessel vessel;
 		public Transform transform;
