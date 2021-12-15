@@ -45,6 +45,7 @@ namespace SmileForTheCamera
 		public string[][][] strHeadLimits;
 		public bool isBodyAnimated = false, isHeadAnimated = true, isFaceFreezed = false, isEditingOffset = false, isEditingLimits = false, isMale = true;
 		public bool[] isHeadPartLimited = { true, true, true };
+		float jetpackThrustPercentage;
 		List<Bone> faceBones = new List<Bone>();
 		Quaternion headOffsetQuaternion, eyeLOffsetQuaternion, eyeROffsetQuaternion;
 
@@ -79,6 +80,7 @@ namespace SmileForTheCamera
 			AddFaceBone(pathUpperJaw + "bn_r_mouthUp_b01");
 			AddFaceBone(pathUpperJaw + "bn_r_mouthUp_c01");
 			AddFaceBone(pathUpperJaw + "bn_r_mouthUp_d01");
+			this.jetpackThrustPercentage = this.kerbalEVA.thrustPercentage;
 			this.isMale = this.kerbalEVA.part.protoModuleCrew[0].gender == ProtoCrewMember.Gender.Male;
 			name = this.kerbalEVA.part.protoModuleCrew[0].name;
 			isAnimated = true;
@@ -96,6 +98,7 @@ namespace SmileForTheCamera
 				{
 					transform.position = isInitiallyLanded ? position : position + (Vector3)Core.InitialOrbit.getPositionAtUT(Planetarium.GetUniversalTime());
 					transform.localEulerAngles = rotation;
+					kerbalEVA.JetpackIsThrusting = false;
 				}
 				if (isHeadAnimated)
 				{
@@ -107,7 +110,7 @@ namespace SmileForTheCamera
 					if (isHeadPartLimited[1]) eyeL.localRotation = EstimateRotation(eyeL.localRotation, headLimits[1]);
 					eyeR.rotation = direction * eyeROffsetQuaternion;
 					if (isHeadPartLimited[2]) eyeR.localRotation = EstimateRotation(eyeR.localRotation, headLimits[2]);
-					eyeR.rotation *= Core.TurnLeft;
+					eyeR.localRotation *= Core.TurnLeft;
 					if (isFaceFreezed)
 					{
 						foreach (Bone bone in faceBones) bone.ForceAnimate();
@@ -156,6 +159,9 @@ namespace SmileForTheCamera
 					strPosition[i] = position[i].ToString();
 					strRotation[i] = rotation[i].ToString();
 				}
+				kerbalEVA.thrustPercentage = 0;
+			} else {
+				kerbalEVA.thrustPercentage = jetpackThrustPercentage;
 			}
 			bool doConstrain = Core.IsEnabled && isAnimated && isBodyAnimated && IsLanded;
 			foreach (Rigidbody rigidbody in kerbalEVA.part.GetComponents<Rigidbody>())

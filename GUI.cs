@@ -12,7 +12,7 @@ namespace SmileForTheCamera
 		static bool wasGUIVisible = Core.IsGUIVisible;
 		static Rect windowPosition = new Rect(UnityEngine.Random.Range(0.23f, 0.27f) * Screen.width, UnityEngine.Random.Range(0.13f, 0.17f) * Screen.height, 0, 0);
 		static GUILayoutOption[] layoutTextFieldRotationHead, layoutTextFieldPosition, layoutTextFieldRotation, layoutSliderPosition, layoutSliderRotation, layoutButton;
-		static GUIStyle styleTextField, styleBox, styleToggleHeadAnimated, styleLabelHeadParts, styleButtonHeadPartsAlignment, styleButtonResetAngles, styleSliderPosition, styleSliderRotation, styleSliderThumb;
+		static GUIStyle styleTextField, styleBox, styleToggleHeadAnimated, styleToggleHeadPartLimited, styleLabelHeadParts, styleButtonHeadPartsAlignment, styleButtonResetAngles, styleSliderPosition, styleSliderRotation, styleSliderThumb;
 
 		void OnGUI()
 		{
@@ -36,6 +36,7 @@ namespace SmileForTheCamera
 			styleTextField = new GUIStyle(GUI.skin.textField) { padding = new RectOffset(4, 4, 3, 3) };
 			styleBox = new GUIStyle(GUI.skin.box) { padding = new RectOffset(4, 4, 3, 3), alignment = TextAnchor.MiddleLeft };
 			styleToggleHeadAnimated = new GUIStyle(GUI.skin.toggle) { margin = new RectOffset(4, 4, 6, 4) };
+			styleToggleHeadPartLimited = new GUIStyle(GUI.skin.toggle) { margin = new RectOffset(4, 4, 4, 6) };
 			styleLabelHeadParts = new GUIStyle(GUI.skin.label) { padding = new RectOffset(4, 4, 3, 0) };
 			styleButtonHeadPartsAlignment = new GUIStyle(GUI.skin.button) { margin = new RectOffset(4, 4, 6, 4), padding = new RectOffset(4, 4, 0, 0) };
 			styleButtonResetAngles = new GUIStyle(GUI.skin.button) { margin = new RectOffset(22, 4, 4, 4), padding = new RectOffset(4, 4, 0, 0) };
@@ -51,19 +52,21 @@ namespace SmileForTheCamera
 			if (Core.IsEnabled != GUILayout.Toggle(Core.IsEnabled, Core.IsEnabled ? " Enabled" : " Disabled", GUILayout.Width(348f)))
 			{
 				Core.IsEnabled = !Core.IsEnabled;
-				if (Core.IsEnabled && FlightGlobals.ActiveVessel != null) Core.InitialOrbit = new Orbit(FlightGlobals.ActiveVessel.orbit); // don't care because null ActiveVessel means AnimatedKerbals.Count == 0
+				if (Core.IsEnabled && FlightGlobals.ActiveVessel != null) Core.InitialOrbit = new Orbit(FlightGlobals.ActiveVessel.orbit); // don't care because null ActiveVessel means AnimatedKerbals.Count == 0 && AnimatedVessels.Count == 0
 				Core.ResetAnimatedObjects();
-				Core.WereNoKerbalsFound = Core.AnimatedKerbals.Count == 0;
+				Core.WasAnyObjectFound = Core.AnimatedKerbals.Count != 0 || Core.AnimatedVessels.Count != 0;
 			}
 			if (GUILayout.Button("Reset all", layoutButton))
 			{
 				Core.ResetAll();
 			}
 			GUILayout.EndHorizontal();
+			GUILayout.Space(15f);
 
 			if (!Core.IsEnabled) ColorizeFieldIsEnabled(styleTextField, false);
-			if (Core.AnimatedKerbals.Count != 0)
+			if (Core.WasAnyObjectFound)
 			{
+
 				for (int id = Core.AnimatedKerbals.Count - 1; id >= 0; id--)
 				{
 					// god, please don't let me die
@@ -72,7 +75,6 @@ namespace SmileForTheCamera
 					{
 						continue;
 					}
-					GUILayout.Space(15f);
 					if (kerbal.isAnimated != GUILayout.Toggle(kerbal.isAnimated, " " + kerbal.name))
 					{
 						kerbal.isAnimated = !kerbal.isAnimated;
@@ -124,10 +126,10 @@ namespace SmileForTheCamera
 							GUILayout.BeginVertical();
 							if (i != 2)
 							{
-								if (kerbal.isHeadPartLimited[i] != GUILayout.Toggle(kerbal.isHeadPartLimited[i], " " + Settings.configTagsPart[i])) { kerbal.isHeadPartLimited[i] = !kerbal.isHeadPartLimited[i]; }
+								if (kerbal.isHeadPartLimited[i] != GUILayout.Toggle(kerbal.isHeadPartLimited[i], " " + Settings.configTagsPart[i], styleToggleHeadPartLimited)) { kerbal.isHeadPartLimited[i] = !kerbal.isHeadPartLimited[i]; }
 							} else {
 								GUILayout.BeginHorizontal();
-								if (kerbal.isHeadPartLimited[i] != GUILayout.Toggle(kerbal.isHeadPartLimited[i], " " + Settings.configTagsPart[i])) { kerbal.isHeadPartLimited[i] = !kerbal.isHeadPartLimited[i]; }
+								if (kerbal.isHeadPartLimited[i] != GUILayout.Toggle(kerbal.isHeadPartLimited[i], " " + Settings.configTagsPart[i], styleToggleHeadPartLimited)) { kerbal.isHeadPartLimited[i] = !kerbal.isHeadPartLimited[i]; }
 								if (GUILayout.Button("Reset angles", styleButtonResetAngles, layoutButton)) { kerbal.ResetHeadAngles(); }
 								GUILayout.EndHorizontal();
 							}
@@ -166,34 +168,32 @@ namespace SmileForTheCamera
 						kerbal.ResetBody();
 					}
 					ThingTransformTextFields(kerbal, kerbal.isAnimated && kerbal.isBodyAnimated);
-					GUILayout.Space(4f);
+					if (id != 0) GUILayout.Space(9f);
 				}
-			} else {
-				if (Core.WereNoKerbalsFound)
-				{
-					GUILayout.Space(15f);
-					GUILayout.Label(" No kerbals found to animate (•ิ_•ิ)?  ԅ(≖‿≖ԅ)");
-					if (Core.AnimatedVessels.Count == 0) GUILayout.Space(15f);
-				}
-			}
 
-			for (int id = 0; id < Core.AnimatedVessels.Count; id++)
-			{
-				AnimatedVessel vessel = Core.AnimatedVessels[id];
-				if (vessel == null || vessel.vessel == null)
+				if (Core.AnimatedKerbals.Count != 0) GUILayout.Space((Core.AnimatedVessels.Count != 0) ? 19f : 4f);
+
+				for (int id = 0; id < Core.AnimatedVessels.Count; id++)
 				{
-					continue;
+					AnimatedVessel vessel = Core.AnimatedVessels[id];
+					if (vessel == null || vessel.vessel == null)
+					{
+						continue;
+					}
+					GUILayout.BeginHorizontal();
+					if (vessel.isAnimated != GUILayout.Toggle(vessel.isAnimated, " " + vessel.name, GUILayout.Width(452f)))
+					{
+						vessel.isAnimated = !vessel.isAnimated;
+						vessel.ResetTransform();
+					}
+					GUILayout.EndHorizontal();
+					ThingTransformTextFields(vessel, vessel.isAnimated);
+					GUILayout.Space((id == 0) ? 9f : 4f);
 				}
-				GUILayout.Space((id == 0) ? 15f : 5f);
-				GUILayout.BeginHorizontal();
-				if (vessel.isAnimated != GUILayout.Toggle(vessel.isAnimated, " " + vessel.name, GUILayout.Width(452f)))
-				{
-					vessel.isAnimated = !vessel.isAnimated;
-					vessel.ResetTransform();
-				}
-				GUILayout.EndHorizontal();
-				ThingTransformTextFields(vessel, vessel.isAnimated);
-				GUILayout.Space(4f);
+
+			} else {
+				GUILayout.Label(" No objects found to animate (•ิ_•ิ)?  ԅ(≖‿≖ԅ)");
+				GUILayout.Space(15f);
 			}
 
 			GUILayout.EndVertical();
@@ -295,7 +295,8 @@ namespace SmileForTheCamera
 	{
 		void Awake()
 		{
-			Core.IsEnabled = Core.WereNoKerbalsFound = false;
+			Core.IsEnabled = false;
+			Core.WasAnyObjectFound = true;
 			Core.AnimatedKerbals.Clear();
 		}
 	}

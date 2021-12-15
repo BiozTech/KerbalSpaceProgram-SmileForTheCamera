@@ -10,7 +10,7 @@ namespace SmileForTheCamera
 	public static class Core
 	{
 
-		public static bool IsEnabled = false, IsGUIVisible = false, WereNoKerbalsFound = false;
+		public static bool IsEnabled = false, IsGUIVisible = false, WasAnyObjectFound = false;
 		public static List<AnimatedKerbal> AnimatedKerbals = new List<AnimatedKerbal>();
 		public static List<AnimatedVessel> AnimatedVessels = new List<AnimatedVessel>();
 		public static Orbit InitialOrbit;
