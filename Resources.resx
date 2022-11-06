@@ -118,7 +118,7 @@
     <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
   </resheader>
   <assembly alias="mscorlib" name="mscorlib, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
-  <data name="ToolbarIcon" type="System.Byte[], mscorlib">
+  <data name="SmileForTheCameraToolbarIcon" type="System.Byte[], mscorlib">
     <value>
         /7W1sv8pLTf/bHOH/5CasP+Ol6v//v34/+7v7//BxMT/jIyM/4lpZ/+zpKf/e3Nv/3cpD/+LKwr/XTwx
         /7TDx//4//7/lJ2e/zMnIv88MS7/pq+w//n+/v+qq6v/iYmJ/6ytrP9YX1//kHt7/5pkY/+gm5v/5/Tz

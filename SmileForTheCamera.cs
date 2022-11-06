@@ -96,8 +96,8 @@ namespace SmileForTheCamera
 			{
 				if (isBodyAnimated)
 				{
-					transform.position = isInitiallyLanded ? position : position + (Vector3)Core.InitialOrbit.getPositionAtUT(Planetarium.GetUniversalTime());
-					transform.localEulerAngles = rotation;
+					vessel.SetPosition(CenterOfUniverse.PositionCenterToWorld(this));
+					vessel.SetRotation(Quaternion.Euler(rotation));
 					kerbalEVA.JetpackIsThrusting = false;
 				}
 				if (isHeadAnimated)
@@ -152,7 +152,7 @@ namespace SmileForTheCamera
 			if (Core.IsEnabled && isAnimated && isBodyAnimated)
 			{
 				isInitiallyLanded = IsLanded;
-				position = isInitiallyLanded ? transform.position : transform.position - (Vector3)Core.InitialOrbit.getPositionAtUT(Planetarium.GetUniversalTime());
+				position = CenterOfUniverse.PositionWorldToCenter(this);
 				rotation = transform.localEulerAngles;
 				for (int i = 0; i < 3; i++)
 				{
@@ -163,11 +163,10 @@ namespace SmileForTheCamera
 			} else {
 				kerbalEVA.thrustPercentage = jetpackThrustPercentage;
 			}
-			bool doConstrain = Core.IsEnabled && isAnimated && isBodyAnimated && IsLanded;
 			foreach (Rigidbody rigidbody in kerbalEVA.part.GetComponents<Rigidbody>())
 			{
 				rigidbody.velocity = rigidbody.angularVelocity = Vector3.zero;
-				rigidbody.constraints = doConstrain ? RigidbodyConstraints.FreezeAll : RigidbodyConstraints.None;
+				rigidbody.constraints = (Core.IsEnabled && isAnimated && isBodyAnimated && IsLanded) ? RigidbodyConstraints.FreezeAll : RigidbodyConstraints.None;
 			}
 			vessel.SetWorldVelocity(Vector3.zero);
 			vessel.angularVelocity = vessel.angularMomentum = Vector3.zero;
@@ -254,7 +253,7 @@ namespace SmileForTheCamera
 		{
 			if (isAnimated)
 			{
-				vessel.SetPosition(isInitiallyLanded ? position : position + (Vector3)Core.InitialOrbit.getPositionAtUT(Planetarium.GetUniversalTime()));
+				vessel.SetPosition(CenterOfUniverse.PositionCenterToWorld(this));
 				vessel.SetRotation(Quaternion.Euler(rotation));
 			}
 		}
@@ -264,7 +263,7 @@ namespace SmileForTheCamera
 			if (Core.IsEnabled && isAnimated)
 			{
 				isInitiallyLanded = IsLanded;
-				position = isInitiallyLanded ? transform.position : transform.position - (Vector3)Core.InitialOrbit.getPositionAtUT(Planetarium.GetUniversalTime());
+				position = CenterOfUniverse.PositionWorldToCenter(this);
 				rotation = transform.localEulerAngles;
 				for (int i = 0; i < 3; i++)
 				{
@@ -272,13 +271,12 @@ namespace SmileForTheCamera
 					strRotation[i] = rotation[i].ToString();
 				}
 			}
-			bool doConstrain = Core.IsEnabled && isAnimated && IsLanded;
 			foreach (Part part in vessel.parts)
 			{
 				foreach (Rigidbody rigidbody in part.GetComponents<Rigidbody>())
 				{
 					rigidbody.velocity = rigidbody.angularVelocity = Vector3.zero;
-					rigidbody.constraints = doConstrain ? RigidbodyConstraints.FreezeAll : RigidbodyConstraints.None;
+					rigidbody.constraints = (Core.IsEnabled && isAnimated && IsLanded) ? RigidbodyConstraints.FreezeAll : RigidbodyConstraints.None;
 				}
 			}
 			vessel.SetWorldVelocity(Vector3.zero);

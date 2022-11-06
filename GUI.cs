@@ -18,8 +18,7 @@ namespace SmileForTheCamera
 		{
 			if (Core.IsGUIVisible)
 			{
-				GUIStyle windowStyle = new GUIStyle(GUI.skin.window);
-				windowStyle.padding = new RectOffset(15, 15, 20, 15);
+				GUIStyle windowStyle = new GUIStyle(GUI.skin.window) { padding = new RectOffset(15, 15, 20, 15) };
 				windowPosition = GUILayout.Window(("SmileForTheCameraGUI").GetHashCode(), windowPosition, OnWindow, "SmileForTheCamera", windowStyle, GUILayout.Width(582f), GUILayout.Height(81f));
 			}
 		}
@@ -52,19 +51,18 @@ namespace SmileForTheCamera
 			if (Core.IsEnabled != GUILayout.Toggle(Core.IsEnabled, Core.IsEnabled ? " Enabled" : " Disabled", GUILayout.Width(348f)))
 			{
 				Core.IsEnabled = !Core.IsEnabled;
-				if (Core.IsEnabled && FlightGlobals.ActiveVessel != null) Core.InitialOrbit = new Orbit(FlightGlobals.ActiveVessel.orbit); // don't care because null ActiveVessel means AnimatedKerbals.Count == 0 && AnimatedVessels.Count == 0
+				if (Core.IsEnabled) CenterOfUniverse.Reset(); // don't care because null ActiveVessel means AnimatedKerbals.Count == 0 && AnimatedVessels.Count == 0
 				Core.ResetAnimatedObjects();
-				Core.WasAnyObjectFound = Core.AnimatedKerbals.Count != 0 || Core.AnimatedVessels.Count != 0;
 			}
-			if (GUILayout.Button("Reset all", layoutButton))
+			if (GUILayout.Button("Clear all", layoutButton))
 			{
-				Core.ResetAll();
+				Core.ClearAnimatedObjects();
 			}
 			GUILayout.EndHorizontal();
 			GUILayout.Space(15f);
 
 			if (!Core.IsEnabled) ColorizeFieldIsEnabled(styleTextField, false);
-			if (Core.WasAnyObjectFound)
+			if (Core.AnyObjectFound)
 			{
 
 				for (int id = Core.AnimatedKerbals.Count - 1; id >= 0; id--)
@@ -233,7 +231,7 @@ namespace SmileForTheCamera
 				}
 				GUILayout.EndHorizontal();
 			} else {
-				Vector3 position = obj.isInitiallyLanded ? obj.transform.position : obj.transform.position - (Vector3)Core.InitialOrbit.getPositionAtUT(Planetarium.GetUniversalTime());
+				Vector3 position = CenterOfUniverse.PositionWorldToCenter(obj);
 				GUILayout.BeginHorizontal();
 				for (int j = 0; j < 3; j++)
 					GUILayout.Box(position[j].ToString(), styleBox, layoutTextFieldPosition);
@@ -296,8 +294,9 @@ namespace SmileForTheCamera
 		void Awake()
 		{
 			Core.IsEnabled = false;
-			Core.WasAnyObjectFound = true;
+			Core.AnyObjectFound = true;
 			Core.AnimatedKerbals.Clear();
+			Core.AnimatedVessels.Clear();
 		}
 	}
 
@@ -314,7 +313,7 @@ namespace SmileForTheCamera
 			if (!IsButtonAdded && ApplicationLauncher.Instance != null)
 			{
 				var resources = new System.Resources.ResourceManager("SmileForTheCamera.Resources", typeof(SmileForTheCameraToolbarButton).Assembly);
-				Byte[] bytes = resources.GetObject("ToolbarIcon") as Byte[];
+				Byte[] bytes = resources.GetObject("SmileForTheCameraToolbarIcon") as Byte[];
 				Texture2D buttonTexture = new Texture2D(38, 38, TextureFormat.ARGB32, false);
 				buttonTexture.LoadRawTextureData(bytes);
 				buttonTexture.Apply();

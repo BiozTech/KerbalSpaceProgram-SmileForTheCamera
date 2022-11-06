@@ -10,10 +10,9 @@ namespace SmileForTheCamera
 	public static class Core
 	{
 
-		public static bool IsEnabled = false, IsGUIVisible = false, WasAnyObjectFound = false;
+		public static bool IsEnabled = false, IsGUIVisible = false, AnyObjectFound = false;
 		public static List<AnimatedKerbal> AnimatedKerbals = new List<AnimatedKerbal>();
 		public static List<AnimatedVessel> AnimatedVessels = new List<AnimatedVessel>();
-		public static Orbit InitialOrbit;
 
 		public static void ResetAnimatedObjects()
 		{
@@ -44,11 +43,12 @@ namespace SmileForTheCamera
 			}
 			AnimatedKerbals = newKerbals;
 			AnimatedVessels = newVessels;
+			AnyObjectFound = AnimatedKerbals.Count != 0 || AnimatedVessels.Count != 0;
 		}
 
-		public static void ResetAll()
+		public static void ClearAnimatedObjects()
 		{
-			IsEnabled = false;
+			IsEnabled = AnyObjectFound = false;
 			AnimatedKerbals.Clear();
 			AnimatedVessels.Clear();
 		}
@@ -59,6 +59,36 @@ namespace SmileForTheCamera
 		}
 
 		public static Quaternion TurnLeft = Quaternion.Euler(0, -90, 0);
+
+	}
+
+	public static class CenterOfUniverse
+	{
+
+		static Vector3 Position;
+		static Quaternion Rotation;
+		static Orbit Orbit;
+
+		public static void Reset()
+		{
+			if (FlightGlobals.ActiveVessel != null)
+			{
+				Position = FlightGlobals.ActiveVessel.transform.position + Vector3.zero; // what is more lame - praying to god or being a god?
+				Rotation = FlightGlobals.ActiveVessel.transform.rotation * Quaternion.identity;
+				Orbit = new Orbit(FlightGlobals.ActiveVessel.orbit);
+			}
+		}
+
+		public static Vector3 PositionWorldToCenter(AnimatedObject obj)
+		{
+			Vector3 position = obj.isInitiallyLanded ? obj.transform.position : obj.transform.position - (Vector3)Orbit.getPositionAtUT(Planetarium.GetUniversalTime());
+			return Quaternion.Inverse(Rotation) * (position - Position);
+		}
+		public static Vector3 PositionCenterToWorld(AnimatedObject obj)
+		{
+			Vector3 position = Rotation * obj.position + Position;
+			return obj.isInitiallyLanded ? position : position + (Vector3)Orbit.getPositionAtUT(Planetarium.GetUniversalTime());
+		}
 
 	}
 
@@ -121,8 +151,7 @@ namespace SmileForTheCamera
 			}
 		};
 
-		static string pluginDataDir = Path.Combine(KSPUtil.ApplicationRootPath, "GameData/BiozTech/PluginData");
-		static string settingsFileName = Path.Combine(pluginDataDir, "SmileForTheCameraSettings.cfg");
+		static string pluginDataDir = Path.Combine(KSPUtil.ApplicationRootPath, "GameData/BiozTech/PluginData"), settingsFileName = Path.Combine(pluginDataDir, "SmileForTheCameraSettings.cfg");
 		static string configTagMain = "SmileForTheCameraSettings", configTagOffset = "Offset", configTagLimits = "Limits";
 		public static string[] configTagsGender = { "Male", "Female" }, configTagsPart = { "Head", "EyeL", "EyeR" }, configAxesParam = { "X", "Y", "Z" }, configTagsParam = { "Min", "Left", "Right", "Max" };
 
@@ -217,19 +246,17 @@ namespace SmileForTheCamera
 			{
 				throw new Exception("Array length is not " + length);
 			}
-			string output = string.Empty;
-			for (int i = 0; i < length-1; i++) output += f[i] + ", ";
-			return output + f[length-1];
+			return String.Join(", ", f);
 		}
 		static bool TryParseFloatN(string s, out float[] result, int length)
 		{
-			result = null;
 			try
 			{
 				result = Array.ConvertAll(s.Split(','), float.Parse);
 			}
 			catch (Exception stupid)
 			{
+				result = null;
 				Core.Log(String.Format("Could not parse to float[{0}]: {1}", length, s));
 				Core.Log(stupid.Message);
 				return false;
