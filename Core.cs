@@ -49,6 +49,8 @@ namespace SmileForTheCamera
 		public static void ClearAnimatedObjects()
 		{
 			IsEnabled = AnyObjectFound = false;
+			foreach (AnimatedKerbal kerbal in AnimatedKerbals) kerbal.ResetBody();
+			foreach (AnimatedVessel vessel in AnimatedVessels) vessel.ResetTransform();
 			AnimatedKerbals.Clear();
 			AnimatedVessels.Clear();
 		}

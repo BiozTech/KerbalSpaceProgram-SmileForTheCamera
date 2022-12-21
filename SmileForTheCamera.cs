@@ -171,14 +171,14 @@ namespace SmileForTheCamera
 			vessel.SetWorldVelocity(Vector3.zero);
 			vessel.angularVelocity = vessel.angularMomentum = Vector3.zero;
 		}
+		public void ResetFaceBones()
+		{
+			foreach (Bone bone in faceBones) bone.Reset();
+		}
 		public void ResetHeadAngles()
 		{
 			headLimits = Settings.RotationLimits[isMale ? 0 : 1].Select(o => o.Select(oo => oo.ToArray()).ToArray()).ToArray();
 			strHeadLimits = headLimits.Select(o => o.Select(oo => oo.Select(rot => rot.ToString()).ToArray()).ToArray()).ToArray();
-		}
-		public void ResetFaceBones()
-		{
-			foreach (Bone bone in faceBones) bone.Reset();
 		}
 		void ResetOffset()
 		{
